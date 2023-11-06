@@ -1,0 +1,4 @@
+*.hkl
+*.pdb
+*.mtz
+run_sfall/data/data_*
