@@ -2,3 +2,4 @@
 *.pdb
 *.mtz
 run_sfall/data/data_*
+run_sfall/out/out_*
