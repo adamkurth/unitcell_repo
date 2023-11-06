@@ -1,0 +1,195 @@
+<B><FONT COLOR="#FF0000"><!--SUMMARY_BEGIN-->
+<html> <!-- CCP4 HTML LOGFILE -->
+<hr>
+<!--SUMMARY_END--></FONT></B>
+<B><FONT COLOR="#FF0000"><!--SUMMARY_BEGIN-->
+<pre>
+ 
+ ###############################################################
+ ###############################################################
+ ###############################################################
+ ### CCP4 8.0.016: MTZ2VARIOUS          version 1.1 :         ##
+ ###############################################################
+ User: root  Run date:  6/11/2023 Run time: 13:31:32 
+
+
+ Please reference: Collaborative Computational Project, Number 4. 2011.
+ "Overview of the CCP4 suite and current developments". Acta Cryst. D67, 235-242.
+ as well as any specific reference in the program write-up.
+
+<!--SUMMARY_END--></FONT></B>
+ Data line--- LABIN H=H K=K L=L FC=FC PHIC=PHIC
+ Data line--- OUTPUT USER '(3I4,2F9.1)'
+
+FORMATTED      UNKNOWN file opened on unit  22
+<B><FONT COLOR="#FF0000"><!--SUMMARY_BEGIN-->
+Logical name: HKLOUT, Filename: /Users/adamkurth/Documents/vscode/CXFEL_Image_Analysis/CXFEL/unitcell_project/run_sfall/data/data_C121/119D.hkl
+<!--SUMMARY_END--></FONT></B>
+
+<B><FONT COLOR="#FF0000"><!--SUMMARY_BEGIN-->
+ USER format output to ASCII file. 
+
+ *** Better to use mtzutils, and mtzdump with a defined format. See documentation!***
+ The format is 
+(3I4,2F9.1)                                                                     
+<!--SUMMARY_END--></FONT></B>
+
+ OPENED INPUT MTZ FILE 
+ Logical Name: HKLIN   Filename: /Users/adamkurth/Documents/vscode/CXFEL_Image_Analysis/CXFEL/unitcell_project/run_sfall/mtz/mtz_C121/119D.mtz 
+
+ * Title:
+
+  A run of SFALL
+
+ * Base dataset:
+
+        0 HKL_base
+          HKL_base
+          HKL_base
+
+ * Number of Datasets = 0
+
+ * Dataset ID, project/crystal/dataset names, cell dimensions, wavelength:
+
+
+ * Number of Columns = 5
+
+ * Number of Reflections = 7600
+
+ * Missing value set to NaN in input mtz file
+
+ * Column Labels :
+
+ H K L FC PHIC
+
+ * Column Types :
+
+ H H H F P
+
+ * Associated datasets :
+
+ 0 0 0 0 0
+
+ * Cell Dimensions : (obsolete - refer to dataset cell dimensions above)
+
+   64.8400   35.3600   25.3500   90.0000   92.2400   90.0000 
+
+ *  Resolution Range :
+
+    0.00255    0.24973     (     19.807 -      2.001 A )
+
+ * Sort Order :
+
+      1     2     3     0     0
+
+ * Space group = 'C 1 2 1' (number     5)
+
+ Data line--- LABIN H=H K=K L=L FC=FC PHIC=PHIC
+ irng           0           2           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0           0
+
+ ===================================
+  READING REFLECTIONS FROM MTZ FILE
+ ===================================
+
+         -32          -2           1   0.00000000       0.00000000       0.00000000       0.00000000       0.00000000       0.00000000    
+ -32  -2   1    0    0    0    0    0    0    0x
+         -32          -2           1   211.737656      -134.027267    
+         -18          12           5   0.00000000       0.00000000       0.00000000       0.00000000       0.00000000       0.00000000    
+ -18  12   5    0    0    0    0    0    0    0x
+         -18          12           5   28.5749702       62.9348335    
+         -10          -8           7   0.00000000       0.00000000       0.00000000       0.00000000       0.00000000       0.00000000    
+ -10  -8   7    0    0    0    0    0    0    0x
+         -10          -8           7   122.274101       36.3828011    
+          -4          -2          12   0.00000000       0.00000000       0.00000000       0.00000000       0.00000000       0.00000000    
+  -4  -2  12    0    0    0    0    0    0    0x
+          -4          -2          12   35.5853424       131.622925    
+           2          -6          11   0.00000000       0.00000000       0.00000000       0.00000000       0.00000000       0.00000000    
+   2  -6  11    0    0    0    0    0    0    0x
+           2          -6          11   77.8354263       84.4626770    
+           7          11           1   0.00000000       0.00000000       0.00000000       0.00000000       0.00000000       0.00000000    
+   7  11   1    0    0    0    0    0    0    0x
+           7          11           1   181.842667       172.242935    
+          13          15           4   0.00000000       0.00000000       0.00000000       0.00000000       0.00000000       0.00000000    
+  13  15   4    0    0    0    0    0    0    0x
+          13          15           4   71.8378677       126.210587    
+          21           9           1   0.00000000       0.00000000       0.00000000       0.00000000       0.00000000       0.00000000    
+  21   9   1    0    0    0    0    0    0    0x
+          21           9           1   236.513947      -126.316292    
+
+ ===================================
+  FINISHED READING REFLECTIONS 
+ ===================================
+
+ Number of reflections   output =     7600
+
+ Number in Working Set (indep)  =        0
+ Number in Free    Set (indep)  =        0
+ Number  Missing       (indep)  =     7600
+ Number in Excluded Set (indep) =     7600
+
+ Number in Working Set (total)  =        0
+ Number in Free    Set (total)  =        0
+ Number  Missing       (total)  =     7600
+ Number in Excluded Set (total) =     7600
+
+ Number rejected by EXCLUDE k/w =        0
+
+
+
+ No. of reflections a) altogether b) to output c) independent   by resolution bins
+   0.00255 -   0.00749        34         0         0
+   0.00749 -   0.01244        37         0         0
+   0.01244 -   0.01738        60         0         0
+   0.01738 -   0.02232        72         0         0
+   0.02232 -   0.02727        61         0         0
+   0.02727 -   0.03221        81         0         0
+   0.03221 -   0.03715        80         0         0
+   0.03715 -   0.04210        93         0         0
+   0.04210 -   0.04704       105         0         0
+   0.04704 -   0.05199        83         0         0
+   0.05199 -   0.05693       111         0         0
+   0.05693 -   0.06187       117         0         0
+   0.06187 -   0.06682       122         0         0
+   0.06682 -   0.07176       106         0         0
+   0.07176 -   0.07670       115         0         0
+   0.07670 -   0.08165       142         0         0
+   0.08165 -   0.08659       132         0         0
+   0.08659 -   0.09153       134         0         0
+   0.09153 -   0.09648       126         0         0
+   0.09648 -   0.10142       139         0         0
+   0.10142 -   0.10637       150         0         0
+   0.10637 -   0.11131       168         0         0
+   0.11131 -   0.11625       136         0         0
+   0.11625 -   0.12120       151         0         0
+   0.12120 -   0.12614       153         0         0
+   0.12614 -   0.13108       182         0         0
+   0.13108 -   0.13603       156         0         0
+   0.13603 -   0.14097       161         0         0
+   0.14097 -   0.14592       180         0         0
+   0.14592 -   0.15086       169         0         0
+   0.15086 -   0.15580       167         0         0
+   0.15580 -   0.16075       189         0         0
+   0.16075 -   0.16569       172         0         0
+   0.16569 -   0.17063       213         0         0
+   0.17063 -   0.17558       173         0         0
+   0.17558 -   0.18052       201         0         0
+   0.18052 -   0.18546       166         0         0
+   0.18546 -   0.19041       184         0         0
+   0.19041 -   0.19535       217         0         0
+   0.19535 -   0.20030       240         0         0
+   0.20030 -   0.20524       166         0         0
+   0.20524 -   0.21018       209         0         0
+   0.21018 -   0.21513       206         0         0
+   0.21513 -   0.22007       214         0         0
+   0.22007 -   0.22501       221         0         0
+   0.22501 -   0.22996       195         0         0
+   0.22996 -   0.23490       210         0         0
+   0.23490 -   0.23984       255         0         0
+   0.23984 -   0.24479       216         0         0
+   0.24479 -   0.24973       218         0         0
+<B><FONT COLOR="#FF0000"><!--SUMMARY_BEGIN-->
+ MTZ2VARIOUS:  Normal termination
+Times: User:       0.0s System:    0.0s Elapsed:     0:00  
+</pre>
+</html>
+<!--SUMMARY_END--></FONT></B>
