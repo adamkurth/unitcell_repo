@@ -6,6 +6,7 @@ import statsmodels.api as sm
 import statsmodels as sm
 import os, sys
 from Bio.PDB import PDBParser
+import seaborn as sns
 
 from plot import plot as p
 from plot import dist as d
@@ -85,9 +86,18 @@ def analyze_crystals(space_group):
                 phase_max = None
                 phase_min = None
                 max_min_diff_phase = None
-                
+            
+            if space_group == "P1211":
+                spacegroup = 0
+            elif space_group == "P121":
+                spacegroup = 1
+            elif space_group == "C121":
+                spacegroup = 2
+            else:
+                raise ValueError("Invalid space group name")
+            
             results_list.append({'PDB_ID': pdb_id, 
-                                 'Spacegroup': space_group, 
+                                 'Spacegroup': spacegroup, 
                                  'Mean Intensity': intensity_mean,
                                  'Max Intensity': intensity_max, 
                                  'Min Intensity': intensity_min,
@@ -225,43 +235,63 @@ if __name__ == "__main__":
 
     """Analyze each spacegroup""" 
     
-    
     # weights in kDa (kilo Daltons)
     
     wd = os.getcwd()
     P1211_df, P1211_intensities, P1211_phases = analyze_crystals("P1211")    
-    print('P1211 Intensity DF: \n', P1211_intensities)
-    print('P1211 Phase DF: \n', P1211_phases)
+    # print('P1211 Intensity DF: \n', P1211_intensities)
+    # print('P1211 Phase DF: \n', P1211_phases)
     print('P1211 Main DF: \n', P1211_df)  
-    # # w.write(P1211_df, P1211_intensities, P1211_phases, 'P1211', wd)
+    # w.write(P1211_df, P1211_intensities, P1211_phases, 'P1211', wd)
     P121_df, P121_intensities, P121_phases = analyze_crystals("P121")
-    print('P121 Intensity DF: \n', P121_intensities)
-    print('P121 Phase DF: \n', P121_phases)
-    print('P121 Main DF: \n', P121_df)  
-    # # w.write(P121_df, P121_intensities, P121_phases, 'P121', wd)
+    # print('P121 Intensity DF: \n', P121_intensities)
+    # print('P121 Phase DF: \n', P121_phases)
+    # print('P121 Main DF: \n', P121_df)  
+    # w.write(P121_df, P121_intensities, P121_phases, 'P121', wd)
     C121_df, C121_intensities, C121_phases  = analyze_crystals("C121")
-    print('C121 Intensity DF: \n', C121_intensities)
-    print('C121 Phase DF: \n', C121_phases)
-    print('C121 Main DF: \n', C121_df)  
-    # # # w.write(C121_df, C121_intensities, C121_phases, 'C121', wd)
+    # print('C121 Intensity DF: \n', C121_intensities)
+    # print('C121 Phase DF: \n', C121_phases)
+    # print('C121 Main DF: \n', C121_df)  
+    # w.write(C121_df, C121_intensities, C121_phases, 'C121', wd)
 
-    for df in [P1211_intensities, P121_intensities, C121_intensities]:
-        print(df.describe())
-        print("\n")
+    all_df1 = pd.concat([P1211_df, P121_df, C121_df])
+    print('All DF: \n', all_df1)
+
+    # for df in [P1211_intensities, P121_intensities, C121_intensities]:
+    #     print(df.describe())
+    #     print("\n")
+    
+    d.cor_matrix(P1211_df)
+    d.cor_matrix(P121_df)
+    d.cor_matrix(C121_df)
+
+    
+
+
+
 
     """"""
-    d.plot_hist(P1211_intensities)
-    d.plot_hist_phases(P1211_phases)
+    # d.plot_hist(P1211_intensities)
+    # d.plot_hist_phases(P1211_phases)
     
-    d.contour(P1211_intensities)
-    d.contour(P1211_phases)
+    # d.contour(P1211_intensities)
+    # d.contour(P1211_phases)
     
-    d.plot_density(P1211_intensities)
-    d.plot_density(P1211_phases)
+    # d.plot_density(P1211_intensities)
+    # d.plot_density(P1211_phases)
     
     # d.plot_boxplot(P1211_intensities)   
     
-    # lm = p.linear_model(['VolumeToUnitCellVolRatio'], 'Mean Intensity', P1211_df, P1211_df)
+    lm1 = p.linear_model(['VolumeToUnitCellVolRatio'], 'Mean Intensity', P1211_df, P1211_df)
+    lm2 = p.linear_model(['VolumeToUnitCellVolRatio', 'Calculated Structure Weight (kDa)'], 'Mean Intensity', P1211_df, P1211_df)
+    lm3 = p.linear_model(['Calculated Structure Weight (kDa)'], 'Mean Intensity', P1211_df, P1211_df)
+    
+    
+    
+    # lm3 = p.linear_model(['Spacegroup'], 'Mean Intensity', P1211_df, P1211_df)
+
+    
+    # lm2 =  p.linear_model(['VolumeToUnitCellVolRatio'], 'Mean Intensity', P1211_df, P1211_df)
     # lm = p.linear_model(['VolumeToUnitCellVolRatio'], 'Mean Phase', P1211_df, P1211_df)
     # lm = p.linear_model(['VolumeToUnitCellVolRatio'], 'Calculated Structure Weight (kDa)', P1211_df, P1211_df)
 
@@ -280,45 +310,3 @@ if __name__ == "__main__":
     # lm = p.linear_model(['VolumeToUnitCellVolRatio'], 'Mean FP', results_df, results_df)
     # p.plot_residuals(lm, 'VolumeToUnitCellVolRatio', 'Mean FP', results_df, results_df)
 
-    # for spacegroup P121 
-    
-    # def analyze_spacegroup(space_group):
-    #     crystal_data = []
-    #     if space_group == "P1211":
-    #         crystal_data = [("104m", "P1211"), ("137l", "P1211"), ("169l", "P1211"), ("1a28", "P1211"), ("1a2a", "P1211"), ("105m", "P1211"), ("153l", "P1211"), ("154l", "P1211"), ("157d", "P1211"), ("176l", "P1211"), ("180l", "P1211"), ("1a3a", "P1211"), ("1a01", "P1211"), ("1a02", "P1211"), ("1a0o", "P1211"), ("1a2a", "P1211"), ("1a2j", "P1211"), ("135l", "P1211")]
-    #     elif space_group == "P121":
-    #         crystal_data = [("1gh4", "P1211"), ("1gxb", "P1211"), ("1hjc", "P1211"), ("1hkn", "P1211"), ("1ic1", "P1211"), ("1ijy", "P1211"), ("1jde", "P1211"), ("1kbl", "P1211"), ("1kc7", "P1211"), ("1kog", "P1211"), ("1kwy", "P1211"), ("1kyz", "P1211"), ("1lf3", "P1211"), ("1lf4", "P1211"), ("1vgl", "P1211"), ("1vjh", "P1211"), ("1vl9", "P1211"), ("1xpp", "P1211"), ("1xtf", "P1211"), ("1y5x", "P1211"), ("1y99", "P1211")]
-    #     else:
-    #         raise ValueError("Invalid space group name")
-        
-    #     dfs_in = []
-    #     dfs_out = []
-    #     unit_cells = []
-        
-    #     for name, space_group in crystal_data:
-    #         try:
-    #             df_in, df_out, unit_cell = analyze_crystal(name, space_group)
-    #             dfs_in.append(df_in)
-    #             dfs_out.append(df_out)
-    #             unit_cells.append(unit_cell)
-    #         except FileNotFoundError:
-    #             print(f"Error: File not found for crystal {name}")
-    #         except Exception as e:
-    #             print(f"Error analyzing crystal {name}: {str(e)}")
-        
-    #     crystal_names = [name[0] for name in crystal_data]
-    #     results_df = create_crystal_df(crystal_names, space_group, weights, dfs_in, unit_cells, dfs_out)
-    #     intensity_df = create_intensity_df(crystal_names, dfs_out)
-        
-    #     return crystal_data, dfs_in, dfs_out, unit_cells, results_df, intensity_df
-    
-
-    
-    
-
-    
-    
-    
-# sm.graphics.plot_fit(lm, 'VolumeToUnitCellVolRatio', vlines=True)
-
-# Adding the total structure weights

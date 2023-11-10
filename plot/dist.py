@@ -144,3 +144,29 @@ def plot_boxplot(values_df):
 
     plt.show()
     return None
+   
+def cor_matrix(df_in):
+    import pandas as pd
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    
+    required_columns = ["Spacegroup", "Calculated Structure Weight (kDa)", 
+                    "VolumeToUnitCellVolRatio", "Mean Intensity", "Mean Phase"]
+    
+    df = pd.DataFrame({
+    'Spacegroup': df_in['Spacegroup'],
+    'Calculated Structure Weight (kDa)':  df_in['Calculated Structure Weight (kDa)'],
+    'VolumeToUnitCellVolRatio': df_in['VolumeToUnitCellVolRatio'],
+    'Mean Intensity': df_in['Mean Intensity'],
+    'Mean Phase': df_in['Mean Phase'],
+    })
+    df['Spacegroup'] = df['Spacegroup'].astype('category').cat.codes
+    df = df[required_columns]
+    corr_matrix = df.corr()
+    plt.figure(figsize=(10, 8))
+
+    sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap="coolwarm", cbar=True, square=True)
+
+    plt.title('Correlation matrix of selected features')
+
+    plt.show()

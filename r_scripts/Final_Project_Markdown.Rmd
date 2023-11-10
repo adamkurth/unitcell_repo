@@ -1,0 +1,589 @@
+---
+title: "Final Project STP 530"
+author: "Adam Kurth"
+date: "2023-11-08"
+output: pdf_document
+---
+
+```{r, warning=F, message=F}
+rm(list=ls())
+# libraries
+library(ggplot2)
+library(dplyr)
+library(ggplot2) 
+library(GGally) 
+library(car)
+library(tidyr)
+library(reshape2)
+library(ggpubr)
+######## Custom Functions
+# -------------------------------------------------------------------------
+custom.residual.plot <- function(model) {
+  # Check if arg is a linear model
+  if (class(model) != "lm") {
+    stop("The input must be a linear model object of class 'lm'.")
+  }
+  fitted_values <- fitted(model)
+  residuals <- residuals(model)
+
+  # plotting the residuals
+  plot(fitted_values, residuals,
+       xlab = "Fitted Values",
+       ylab = "Residuals",
+       main = "Residual Plot",
+       pch = 20)
+  # indicate the baseline
+  abline(h = 0, col = "red", lty = 2)
+  invisible(list(fitted_values = fitted_values, residuals = residuals))
+}
+assumption.1.check.linearity <- function(m) {
+  cat("\nAssumption 1: Checking for linearity...\n")
+  custom.residual.plot(m)
+}
+# Assumption 2: Check for excessive outliers.
+# Cooks distance: aggregates measure of influence of the ith case on all fitted values.
+# does not require repeatedly fitting the regression model omitting the ith case.
+# "product" of leverage and outliers.
+assumption.2.check.outliers <- function(m) {
+  cat("\nAssumption 2: Checking for no excessive outliers...\n")
+  
+  cooks_dist <- cooks.distance(m)
+  plot(cooks_dist, type = "h",  
+       xlab = "Observation Index", 
+       ylab = "Cook's Distance",
+       main = "Cook's Distance Plot for Outlier Detection")
+  
+  cutoff <- 4 / length(cooks_dist)
+  significant_outliers <- which(cooks_dist > cutoff)
+  if(length(significant_outliers) > 0) {
+    cat("Observations with a Cook's distance greater than", cutoff, "may be considered influential:\n")
+    print(significant_outliers)
+  } else {
+    cat("No individual observations are significantly influential.\n")
+  }
+  return(cooks_dist)
+}
+# Assumption 3: Constant Variance (homoskedasticity)
+assumption.3.check.homoskedasticity <- function(m) {
+  cat("\nAssumption 3: Checking for constant variance (homoskedasticity)...\n")
+  
+  plot(m$fitted.values, sqrt(abs(m$residuals)),
+       xlab = "Fitted Values",
+       ylab = "Sqrt(|Residuals|)",
+       main = "Scale-Location Plot")
+  
+  ncv <- car::ncvTest(m)
+  cat(sprintf("Non-Constant Variance Score Test Statistic: %f\n", ncv$statistic))
+  cat(sprintf("p-value: %f\n", ncv$p.value))
+}
+# Assumption 4: Normally Distributed Errors
+assumption.4.check.normality <- function(m) {
+  cat("\nAssumption 4: Checking for normally distributed errors...\n")
+  qqnorm(m$residuals)
+  qqline(m$residuals)
+}
+# Assumption 5: Independence of Errors
+assumption.5.check.independence <- function(m) {
+  cat("\nAssumption 5: Checking for independence of errors...\n")
+  
+  dw_test <- car::durbinWatsonTest(m)
+  cat(sprintf("Durbin-Watson Test Statistic: %f\n", dw_test$statistic))
+  cat(sprintf("p-value: %f\n", dw_test$p.value))
+  return(dw_test)
+}
+# Assumption 6: Multicollinearity
+assumption.6.check.multicollinearity <- function(m) {
+  cat("\nAssumption 6: Checking for multicollinearity...\n")
+  
+  vif_values <- car::vif(m)
+  print(vif_values)
+}
+# -------------------------------------------------------------------------
+check.assumptions <- function(m) {
+  if (class(m) != "lm") {
+    stop("Input must be a linear model with class 'lm'.")
+  }
+  
+  assumption.1.check.linearity(m)
+  readline(prompt="Press [Enter] to continue...\n")
+  
+  assumption.2.check.outliers(m)
+  readline(prompt="Press [Enter] to continue...\n")
+  
+  assumption.3.check.homoskedasticity(m)
+  readline(prompt="Press [Enter] to continue...\n")
+  
+  assumption.4.check.normality(m)
+  readline(prompt="Press [Enter] to continue...\n")
+  
+  assumption.5.check.independence(m)
+  readline(prompt="Press [Enter] to continue...\n")
+  
+  assumption.6.check.multicollinearity(m)
+}
+
+```
+
+```{r, message=F, warning=F}
+fix_header_df1 <- function(df) {
+  # Reorder the columns with "Calculated Structure Weight" as the 3rd column
+  colnames(df) <- c("Spacegroup.ID", "PDB.ID", "Calculated.Structure.Weight", "a", "b", "c", "Alpha", "Beta", "Gamma", "Unit.Vol", "Crystal.Vol", "Vol.Unit.Ratio", "Mean.Intensity", "Max.Intensity", "Min.Intensity", "MaxMin.Intensity.Dif", "Mean.Phase", "Max.Phase", "Min.Phase", "MaxMin.Phase.Difference")
+  return(df)
+}
+####### SETUP
+# -------------------------------------------------------------------------
+setwd("/Users/adamkurth/Documents/vscode/CXFEL_Image_Analysis/CXFEL/unitcell_repo/r_scripts")
+# getwd()
+# -------------------------------------------------------------------------
+df1_P1211 = read.table("../P1211_output/P1211_crystal_data.txt", header = TRUE, fill = TRUE)
+# Remove empty NA columns when reading 
+df1_P1211 = df1_P1211[, sapply(df1_P1211, function(col) !all(is.na(col)))]
+df2_P1211 = read.table("../P1211_output/P1211_intensity_data.txt", header = TRUE)
+df3_P1211 = read.table("../P1211_output/P1211_phases_data.txt", header = TRUE)  
+# -------------------------------------------------------------------------
+df1_P121 = df1_P1211[, sapply(df1_P1211, function(col) !all(is.na(col)))]
+df2_P121 = read.table("../P121_output/P121_intensity_data.txt", header = TRUE)
+df3_P121 = read.table("../P121_output/P121_phases_data.txt", header = TRUE)
+# -------------------------------------------------------------------------
+df1_C121 = df1_P1211[, sapply(df1_P1211, function(col) !all(is.na(col)))]
+df2_C121 = read.table("../C121_output/C121_intensity_data.txt", header = TRUE)
+df3_C121 = read.table("../C121_output/C121_phases_data.txt", header = TRUE) 
+
+df1_P1211 = fix_header_df1(df1_P1211)
+
+# extra column in df1
+df1_P1211 = df1_P1211[, -1]
+df1_P121 = df1_P121[,-1]
+df1_C121 = df1_C121[,-1]
+# -------------------------------------------------------------------------
+########## FORMATTING 
+# remove the improper colnames
+colnames(df1_P1211) = c("PDB.ID", "Spacegroup", "Calc.Structure.weight", "a", "b", "c", "Alpha", "Beta", "Gamma", "Unit.Vol", "Crystal.Vol", "Vol.Unit.Ratio", "Mean.Intensity", "Max.Intensity", "Min.Intensity", "MaxMin.Intensity.Dif", "Mean.Phase", "Max.Phase", "Min.Phase", "MaxMin.Phase.Difference")
+colnames(df1_P1211) = sub("^X", "", colnames(df1_P1211))
+colnames(df2_P1211) = sub("^X", "", colnames(df2_P1211))
+colnames(df2_P1211) <- sub("^X", "", colnames(df2_P1211))
+colnames(df2_P121) <- sub("^X", "", colnames(df2_P121))
+colnames(df2_C121) <- sub("^X", "", colnames(df2_C121))
+colnames(df3_P1211) = sub("^X", "", colnames(df3_P1211))
+colnames(df3_P121) = sub("^X", "", colnames(df3_P121))
+colnames(df3_C121) = sub("^X", "", colnames(df3_C121))
+
+df1_P1211 = as.data.frame(df1_P1211)
+df2_P1211 = as.data.frame(df2_P1211)
+df3_P1211 = as.data.frame(df3_P1211)
+
+df1_P121 = as.data.frame(df1_P121)
+df2_P121 = as.data.frame(df2_P121)
+df3_P121 = as.data.frame(df3_P121)
+
+df1_C121 = as.data.frame(df1_C121)
+df2_C121 = as.data.frame(df2_C121)
+df3_C121 = as.data.frame(df3_C121)
+
+new_colnames = c("PDB.ID", "Spacegroup.ID", "Calc.Structure.weight", "a", "b", "c", "Alpha",
+                 "Beta", "Gamma", "Unit.Vol", "Crystal.Vol", "Vol.Unit.Ratio",
+                 "Mean.Intensity", "Max.Intensity", "Min.Intensity", "MaxMin.Intensity.Dif",
+                 "Mean.Phase", "Max.Phase", "Min.Phase", "MaxMin.Phase.Difference")
+colnames(df1_P1211) = new_colnames
+colnames(df1_P121) = new_colnames
+colnames(df1_C121) = new_colnames
+# -------------------------------------------------------------------------
+#### FOR CONVERTING DF2, DF3
+
+transform_df <- function(df) {
+  # Add a row_id to track the original row order
+  df$row_id <- seq_len(nrow(df))
+  
+  # Melt the dataframe by 'row_id' to keep track of the original rows
+  long_df <- melt(df, id.vars = 'row_id')
+  
+  # Cast the melted dataframe into a wide format with each PDB ID as a row
+  # The values will be spread across columns named with the original row numbers
+  new_df <- dcast(long_df, variable ~ row_id, value.var = "value")
+  
+  # Return the transformed dataframe
+  return(new_df)
+}
+
+df2_P1211 = transform_df(df2_P1211)
+df2_P121 = transform_df(df2_P121)
+df2_C121 = transform_df(df2_C121)
+
+df3_P1211 = transform_df(df3_P1211)
+df3_P121 = transform_df(df3_P121)
+df3_C121 = transform_df(df3_C121)
+
+df1_P1211$Spacegroup.ID = 0
+df2_P1211$Spacegroup.ID = 0
+df3_P1211$Spacegroup.ID = 0
+# Initialize all values in P121 to 1
+df1_P121$Spacegroup.ID = 1
+df2_P121$Spacegroup.ID = 1
+df3_P121$Spacegroup.ID = 1
+# Initialize all values in C121 to 2
+df1_C121$Spacegroup.ID = 2
+df2_C121$Spacegroup.ID = 2
+df3_C121$Spacegroup.ID = 2
+# -------------------------------------------------------------------------
+# Reorder df1, df2, df3 and append spacegroup.id to 1st column
+df1_P1211 = data.frame(Spacegroup.ID = 0, df1_P1211)
+df1_P1211 = df1_P1211 %>% select(-Spacegroup.ID.1)
+df1_P121 = data.frame(Spacegroup.ID = 1, df1_P121)
+df1_P121 = df1_P121 %>% select(-Spacegroup.ID.1)
+df1_C121 = data.frame(Spacegroup.ID = 2, df1_C121)
+df1_C121 = df1_C121 %>% select(-Spacegroup.ID.1)
+
+df2_P1211 = data.frame(Spacegroup.ID = 0, df2_P1211)
+df2_P121 = data.frame(Spacegroup.ID = 1, df2_P121)
+df2_C121 = data.frame(Spacegroup.ID = 2, df2_C121)
+
+df3_P1211 = data.frame(Spacegroup.ID = 0, df3_P1211)
+df3_P121 = data.frame(Spacegroup.ID = 1, df2_P121)
+df3_C121 = data.frame(Spacegroup.ID = 2, df3_C121)
+# -------------------------------------------------------------------------
+df1_list <- list(df1_P1211, df1_P121, df1_C121)
+df2_list <- list(df2_P1211, df2_P121, df2_C121)
+df3_list <- list(df3_P1211, df3_P121, df3_C121)
+all_df1 <- data.frame(); all_df2 <- data.frame(); all_df3 <- data.frame()
+all_df1 <- bind_rows(df1_P1211, df1_P121, df1_C121)
+all_df2 <- bind_rows(df2_P1211, df2_P121, df2_C121)
+all_df3 <- bind_rows(df3_P1211, df3_P121, df3_C121)
+# head(all_df1)
+# head(all_df2)
+# head(all_df3)
+# -------------------------------------------------------------------------
+all_df2
+```
+
+
+```{r, message=FALSE}
+# To focus on only on numerical values interested in testing.
+columns_to_remove <- c("Spacegroup.ID", "PDB.ID", "a", "b", "c", "Alpha", "Beta", "Gamma", "Max.Intensity", 
+                       "Min.Intensity", "MaxMin.Intensity.Dif", "Max.Phase", 
+                       "Min.Phase", "MaxMin.Phase.Difference", "PDB.ID")
+numeric_df1_P1211 = df1_P1211[, !(names(df1_P1211) %in% columns_to_remove)]
+ggpairs(numeric_df1_P1211, cardinality_threshold = 100)
+
+########## MODELS 
+# -------------------------------------------------------------------------
+m.P1211 = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_P1211)
+par(mfrow=c(2,2))
+plot(m.P1211)
+par(mfrow=c(1,1))
+
+########## Diagnostics
+# -------------------------------------------------------------------------
+
+# Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
+a = ggplot(data = df1_P1211, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
+
+# Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
+b = ggplot(data = df1_P1211, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+ggarrange(a, b, ncol = 1)
+
+# This does not show linear relationship off the bat.
+
+# individually
+par(mfrow=c(2,2))
+assumption.1.check.linearity(m.P1211)
+assumption.2.check.outliers(m.P1211) # most definitely influence of outliers.
+assumption.3.check.homoskedasticity(m.P1211)
+assumption.4.check.normality(m.P1211)
+assumption.5.check.independence(m.P1211)
+assumption.6.check.multicollinearity(m.P1211)
+par(mfrow=c(1,1))
+# check for multicolinearity again.
+anova(m.P1211)
+# Visualize outliers, leverage points, and influential points
+car::influencePlot(m.P1211,id=list(labels=row.names(df1_P1211)))
+# Outliers detected rows: 4, 53, 59, 5
+# -------------------------------------------------------------------------
+```
+
+HELP
+
+
+
+
+
+
+
+
+```{r}
+# -------------------------------------------------------------------------
+# TRIAL
+percentile.90 = apply(all_df2[, -c(1,2)], 1, function(x) quantile(x, 0.9, na.rm=T)
+top.10.percent.df <- all_df2[ mapply(function(row, threshold) any(row > threshold), all_df2[, -c(1,2)], percentile.90), ]
+top.10.percent.df
+
+
+
+top.10.percent.logical = all_df2[,c(1,2)] > percentile.90
+row.in.top.10.percent = rowSums(top.10.percent.logical) > 0
+top.10.df = all_df2[row.in.top.10.percent, ]
+
+
+
+# -------------------------------------------------------------------------
+plot(Mean.Intensity ~ Spacegroup.ID, all_df1)
+
+plot(m.P1211)
+
+car::avPlots(m.P1211)
+
+ncol(all_df2)
+
+mean.top10 = apply(all_df2[, 3:ncol(all_df2)], MARGIN = 1, FUN = function(x) mean(sort(x, decreasing=T)[1:(337)]))
+mean.top10
+
+head(mean.top10)
+
+m = lm(mean.top10 ~ df1_P1211$Vol.Unit.Ratio)
+
+
+length(df1_P1211$Vol.Unit.Ratio)
+length(mean.top10)
+
+```
+
+
+```{r}
+# every crystal in df2_all corresponds to the unique intensity values. Which we want to try and model.
+# We retrieve the top 90th percentile of all of the rows (of the same crystal), and computes the mean value which is greater or equal to that percentile.
+mean.top10 <- apply(all_df2[, 3:ncol(all_df2)], MARGIN = 1, FUN = function(x) {
+  non_missing_values <- x[!is.na(x)] # Remove NAs
+  if (length(non_missing_values) > 0) {
+    mean(non_missing_values[non_missing_values >= quantile(non_missing_values, probs = 0.9, na.rm = TRUE)])
+  } else {
+    NA # Handle rows with no non-missing values
+  }
+})
+
+#align the mean.top10 and the vol.unit.ratio by selecting all of the 299 rows of df1_P1211$Vol.Unit.Ratio to match the length of mean.top10, and creates a new df of the vectors.
+aligned_df <- data.frame(mean.top10, Vol.Unit.Ratio = df1_P1211$Vol.Unit.Ratio[1:299])
+aligned_df <- aligned_df[!is.na(df1_P1211$Vol.Unit.Ratio), ]
+aligned_df
+
+m.percentile.P1211 <- lm(mean.top10 ~ Vol.Unit.Ratio, data = aligned_df)
+par(mfrow = c(2, 2))
+plot(m.percentile.P1211)
+par(mfrow = c(1, 1))
+
+# -------------------------------------------------------------------------
+# Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
+ggplot(data = aligned_df, aes(x = mean.top10, y = Vol.Unit.Ratio)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "mean.top10", y = "vol.unit.ratio", 
+       title = "Scatterplot of mean.top10 vs. vol.unit.ratio")
+
+fitted = fitted(m)
+residuals = residuals(m)
+residuals.df = data.frame(fitted, residuals)
+
+ggplot(data = residuals.df, aes(x = fitted, y = residuals)) + 
+  geom_point() +
+ geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "fitted", y = "residuals", 
+       title = "fitted vs. residuals")
+# -------------------------------------------------------------------------
+
+```
+
+
+
+
+
+```{r, warning=FALSE, message=FALSE}
+########## Treating outliers.
+# -------------------------------------------------------------------------
+cooks.d = cooks.distance(m.P1211)
+max(cooks.d)
+min(cooks.d)
+3*mean(cooks.d)
+influence = cooks.d[(cooks.d > (3*mean(cooks.d, na.rm = T)))]
+influence # see that most of the rows stated above are in this list
+row.influence = names(influence)
+outliers = df1_P1211[row.influence,]
+df1_P1211.reduced = df1_P1211 %>% anti_join(outliers)
+
+m.P1211.R = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_P1211.reduced)
+vif(m.P1211.R) # even lower but barely
+# -------------------------------------------------------------------------
+# Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
+a = ggplot(data = df1_P1211.reduced, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
+
+# Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
+b = ggplot(data = df1_P1211.reduced, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+ggarrange(a,b, nrow =2)
+# -------------------------------------------------------------------------
+car::influencePlot(m.P1211.R,id=list(labels=row.names(df1_P1211.reduced))) # did not help much
+plot(all_df1$Spacegroup.ID, all_df1$Mean.Intensity, data=all_df1) # does not look like significant difference among the spacegroups.
+ 
+
+
+
+
+
+
+# cooks.d = cooks.distance(m.P1211.R)
+# max(cooks.d)
+# min(cooks.d)
+# 3*mean(cooks.d)
+# influence = cooks.d[(cooks.d > (3*mean(cooks.d, na.rm = T)))]
+# influence # see that most of the rows stated above are in this list
+# row.influence = names(influence)
+# outliers = df1_P1211.reduced[row.influence,]
+# df1_P1211.reduced = df1_P1211.reduced %>% anti_join(outliers)
+# 
+# m.P1211.R = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_P1211.reduced)
+# 
+# # -------------------------------------------------------------------------
+# 
+# cat("Adjusted R-squared of reduced model: ", summary(m.P1211.R)$adj.r.squared, "\n")
+# 
+# # -------------------------------------------------------------------------
+# ggplot(data = df1_P1211.reduced, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
+#   geom_point() +
+#   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+#   labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
+#        title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
+# 
+# # Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
+# ggplot(data = df1_P1211.reduced, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+#   geom_point() +
+#   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+#   labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
+#        title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+# 
+# car::influencePlot(m.P1211.R,id=list(labels=row.names(df1_P1211.reduced)))
+
+
+# -------------------------------------------------------------------------
+
+```
+
+
+## Advanced Diagnostics
+
+# Assumption 5: Cook's Distance: 
+
+Cook's Distance is a measure to estimate the influence of all the data points when using ordinary least squares in regression. This helps point out outliers with a strong influence on  the data. Since the assumption 5 check, used the `cooks.distance()` function, and gave an autocorrelation of $0.05725871$, this means that there's a low correlation between residuals. Thus, the residuals are independent.
+
+D-W Test Statistic:
+This test statistic tests that the null hypothesis has no autocorrelation among the residuals. With a range of 0 to 4 for this particular test statistic shows a value very close to 2. When 4 means that there is positive autocorrelation, and 0 indicates that there's negative autocorrelation. Thus, there's little to no autocorrelation among the residuals in this model. 
+
+P-Value:
+Under the null hypothesis, the p-value states that there is no autocorrelation. With a p-value typically above $0.05$, we fail to reject the null hypothesis. This does not give enough evidence to reject the null hypothesis. With a p-value of $0.542$, this model indicates that there is not enough statistical evidence to conclude that the residuals are correlated. 
+
+Influence Plot:
+
+
+# Assumption 6: Multicolinearity
+
+With a VIF score of around 1, this suggests that there is very low multicolinearity in the model. We can proceed with this model that there are low correlation between the multiple independent variables in the model. Since these show VIF values of roughly around 1, these are perfectly colinear.
+
+
+```{r,message=FALSE, warning=FALSE}
+
+# trying
+
+########## CURVILINEAR MODELS 
+# -------------------------------------------------------------------------
+ggpairs(numeric_df1_P1211, cardinality_threshold = 100)
+
+# centering 
+numeric_df1_P1211$Vol.Unit.Ratio.c <- numeric_df1_P1211$Vol.Unit.Ratio - mean(numeric_df1_P1211$Vol.Unit.Ratio)
+numeric_df1_P1211$Vol.Unit.Ratio.c.2 <- numeric_df1_P1211$Vol.Unit.Ratio.c^2
+
+m.poly.P1211 <- lm(Mean.Intensity ~ Vol.Unit.Ratio.c + Vol.Unit.Ratio.c.2, data = numeric_df1_P1211)
+par(mfrow=c(2,2))
+plot(m.poly.P1211)
+par(mfrow=c(1,1))
+
+car::vif(m.poly.P1211)
+
+cat("Adjusted R-squared:", summary(m.poly.P1211)$adj.r.squared, "\n") #!?
+
+ggplot(data = numeric_df1_P1211, aes(x = Vol.Unit.Ratio.c, y = Mean.Intensity)) +
+  geom_point() +  # Add scatterplot points
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), col = "red") +  # Add polynomial regression fit
+  labs(x = "Centered Vol.Unit.Ratio", y = "Mean.Intensity",
+       title = "Polynomial Regression Fit of Mean.Intensity vs. Centered Vol.Unit.Ratio")
+
+fitted_values = fitted(m.poly.P1211)
+residuals = resid(m.poly.P1211)
+residuals_df = data.frame(Fitted = fitted_values, Residuals = residuals)
+
+ggplot(data = residuals_df, aes(x = Fitted, y = Residuals)) +
+  geom_point() +  # Add scatterplot points
+  geom_hline(yintercept = 0, col = "red") +  # Add horizontal reference line at y = 0
+  labs(x = "Fitted Values", y = "Residuals",
+       title = "Residuals vs. Fitted Values for Polynomial Model") 
+
+# -------------------------------------------------------------------------
+######## TAKE CARE OF LEVERAGE POINTS
+car::influencePlot(m.poly.P1211)
+# high leverage point at row, 53
+# large influence at rows, 5, 59
+
+cooks.d = cooks.distance(m.poly.P1211)
+# Plot Cook's Distance
+plot(cooks.d, pch = 20, main = "Cook's Distance Plot", xlab = "Observation Index", ylab = "Cook's Distance")
+abline(h = 4 / length(cooks.d), col = "red")  #threshold line
+
+# Identify influential points
+influence = which(cooks.d > 4 / length(cooks.d))
+cat("Influential point(s) based on Cook's distance:", influence, "\n")
+row.influence = names(influence)
+outliers = numeric_df1_P1211[row.influence,]
+numeric_df1_P1211_R = numeric_df1_P1211 %>% anti_join(outliers)
+
+# -------------------------------------------------------------------------
+########### Try again without outliers
+numeric_df1_P1211_R$Vol.Unit.Ratio.c <- numeric_df1_P1211_R$Vol.Unit.Ratio - mean(numeric_df1_P1211_R$Vol.Unit.Ratio)
+numeric_df1_P1211_R$Vol.Unit.Ratio.c.2 <- numeric_df1_P1211_R$Vol.Unit.Ratio.c^2
+
+m.poly.P1211 <- lm(Mean.Intensity ~ Vol.Unit.Ratio.c + Vol.Unit.Ratio.c.2, data = numeric_df1_P1211_R)
+par(mfrow=c(2,2))
+plot(m.poly.P1211)
+par(mfrow=c(1,1))
+
+car::vif(m.poly.P1211)
+
+cat("Adjusted R-squared:", summary(m.poly.P1211)$adj.r.squared, "\n") #!?
+
+ggplot(data = numeric_df1_P1211_R, aes(x = Vol.Unit.Ratio.c, y = Mean.Intensity)) +
+  geom_point() +  # Add scatterplot points
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), col = "red") +  # Add polynomial regression fit
+  labs(x = "Centered Vol.Unit.Ratio", y = "Mean.Intensity",
+       title = "Polynomial Regression Fit of Mean.Intensity vs. Centered Vol.Unit.Ratio")
+
+fitted_values = fitted(m.poly.P1211)
+residuals = resid(m.poly.P1211)
+residuals_df = data.frame(Fitted = fitted_values, Residuals = residuals)
+
+ggplot(data = residuals_df, aes(x = Fitted, y = Residuals)) +
+  geom_point() +  # Add scatterplot points
+  geom_hline(yintercept = 0, col = "red") +  # Add horizontal reference line at y = 0
+  labs(x = "Fitted Values", y = "Residuals",
+       title = "Residuals vs. Fitted Values for Polynomial Model") 
+
+
+```
