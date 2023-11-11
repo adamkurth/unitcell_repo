@@ -3,9 +3,10 @@ title: "Final Project STP 530"
 author: "Adam Kurth"
 date: "2023-11-08"
 output: pdf_document
+bibliography: cite.bib
 ---
 
-```{r, warning=F, message=F}
+```{r, warning=F, message=F, include=F, echo=F}
 rm(list=ls())
 # libraries
 library(ggplot2)
@@ -18,13 +19,13 @@ library(reshape2)
 library(ggpubr)
 ######## Custom Functions
 # -------------------------------------------------------------------------
-custom.residual.plot <- function(model) {
+custom.residual.plot = function(model) {
   # Check if arg is a linear model
   if (class(model) != "lm") {
     stop("The input must be a linear model object of class 'lm'.")
   }
-  fitted_values <- fitted(model)
-  residuals <- residuals(model)
+  fitted_values = fitted(model)
+  residuals = residuals(model)
 
   # plotting the residuals
   plot(fitted_values, residuals,
@@ -36,7 +37,7 @@ custom.residual.plot <- function(model) {
   abline(h = 0, col = "red", lty = 2)
   invisible(list(fitted_values = fitted_values, residuals = residuals))
 }
-assumption.1.check.linearity <- function(m) {
+assumption.1.check.linearity = function(m) {
   cat("\nAssumption 1: Checking for linearity...\n")
   custom.residual.plot(m)
 }
@@ -44,27 +45,27 @@ assumption.1.check.linearity <- function(m) {
 # Cooks distance: aggregates measure of influence of the ith case on all fitted values.
 # does not require repeatedly fitting the regression model omitting the ith case.
 # "product" of leverage and outliers.
-assumption.2.check.outliers <- function(m) {
+assumption.2.check.outliers = function(m) {
   cat("\nAssumption 2: Checking for no excessive outliers...\n")
   
-  cooks_dist <- cooks.distance(m)
+  cooks_dist = cooks.distance(m)
   plot(cooks_dist, type = "h",  
        xlab = "Observation Index", 
        ylab = "Cook's Distance",
        main = "Cook's Distance Plot for Outlier Detection")
   
-  cutoff <- 4 / length(cooks_dist)
-  significant_outliers <- which(cooks_dist > cutoff)
+  cutoff = 4 / length(cooks_dist)
+  significant_outliers = which(cooks_dist > cutoff)
   if(length(significant_outliers) > 0) {
     cat("Observations with a Cook's distance greater than", cutoff, "may be considered influential:\n")
     print(significant_outliers)
   } else {
     cat("No individual observations are significantly influential.\n")
   }
-  return(cooks_dist)
+  return(invisible(cooks_dist))  # return cooks_dist without printing it
 }
 # Assumption 3: Constant Variance (homoskedasticity)
-assumption.3.check.homoskedasticity <- function(m) {
+assumption.3.check.homoskedasticity = function(m) {
   cat("\nAssumption 3: Checking for constant variance (homoskedasticity)...\n")
   
   plot(m$fitted.values, sqrt(abs(m$residuals)),
@@ -72,34 +73,34 @@ assumption.3.check.homoskedasticity <- function(m) {
        ylab = "Sqrt(|Residuals|)",
        main = "Scale-Location Plot")
   
-  ncv <- car::ncvTest(m)
+  ncv = car::ncvTest(m)
   cat(sprintf("Non-Constant Variance Score Test Statistic: %f\n", ncv$statistic))
   cat(sprintf("p-value: %f\n", ncv$p.value))
 }
 # Assumption 4: Normally Distributed Errors
-assumption.4.check.normality <- function(m) {
+assumption.4.check.normality = function(m) {
   cat("\nAssumption 4: Checking for normally distributed errors...\n")
   qqnorm(m$residuals)
   qqline(m$residuals)
 }
 # Assumption 5: Independence of Errors
-assumption.5.check.independence <- function(m) {
+assumption.5.check.independence = function(m) {
   cat("\nAssumption 5: Checking for independence of errors...\n")
   
-  dw_test <- car::durbinWatsonTest(m)
+  dw_test = car::durbinWatsonTest(m)
   cat(sprintf("Durbin-Watson Test Statistic: %f\n", dw_test$statistic))
   cat(sprintf("p-value: %f\n", dw_test$p.value))
   return(dw_test)
 }
 # Assumption 6: Multicollinearity
-assumption.6.check.multicollinearity <- function(m) {
+assumption.6.check.multicollinearity = function(m) {
   cat("\nAssumption 6: Checking for multicollinearity...\n")
   
-  vif_values <- car::vif(m)
+  vif_values = car::vif(m)
   print(vif_values)
 }
 # -------------------------------------------------------------------------
-check.assumptions <- function(m) {
+check.assumptions = function(m) {
   if (class(m) != "lm") {
     stop("Input must be a linear model with class 'lm'.")
   }
@@ -124,10 +125,10 @@ check.assumptions <- function(m) {
 
 ```
 
-```{r, message=F, warning=F}
-fix_header_df1 <- function(df) {
+```{r, message=F, warning=F, echo=F, include=F}
+fix_header_df1 = function(df) {
   # Reorder the columns with "Calculated Structure Weight" as the 3rd column
-  colnames(df) <- c("Spacegroup.ID", "PDB.ID", "Calculated.Structure.Weight", "a", "b", "c", "Alpha", "Beta", "Gamma", "Unit.Vol", "Crystal.Vol", "Vol.Unit.Ratio", "Mean.Intensity", "Max.Intensity", "Min.Intensity", "MaxMin.Intensity.Dif", "Mean.Phase", "Max.Phase", "Min.Phase", "MaxMin.Phase.Difference")
+  colnames(df) = c("Spacegroup.ID", "PDB.ID", "Calculated.Structure.Weight", "a", "b", "c", "Alpha", "Beta", "Gamma", "Unit.Vol", "Crystal.Vol", "Vol.Unit.Ratio", "Mean.Intensity", "Max.Intensity", "Min.Intensity", "MaxMin.Intensity.Dif", "Mean.Phase", "Max.Phase", "Min.Phase", "MaxMin.Phase.Difference")
   return(df)
 }
 ####### SETUP
@@ -161,9 +162,9 @@ df1_C121 = df1_C121[,-1]
 colnames(df1_P1211) = c("PDB.ID", "Spacegroup", "Calc.Structure.weight", "a", "b", "c", "Alpha", "Beta", "Gamma", "Unit.Vol", "Crystal.Vol", "Vol.Unit.Ratio", "Mean.Intensity", "Max.Intensity", "Min.Intensity", "MaxMin.Intensity.Dif", "Mean.Phase", "Max.Phase", "Min.Phase", "MaxMin.Phase.Difference")
 colnames(df1_P1211) = sub("^X", "", colnames(df1_P1211))
 colnames(df2_P1211) = sub("^X", "", colnames(df2_P1211))
-colnames(df2_P1211) <- sub("^X", "", colnames(df2_P1211))
-colnames(df2_P121) <- sub("^X", "", colnames(df2_P121))
-colnames(df2_C121) <- sub("^X", "", colnames(df2_C121))
+colnames(df2_P1211) = sub("^X", "", colnames(df2_P1211))
+colnames(df2_P121) = sub("^X", "", colnames(df2_P121))
+colnames(df2_C121) = sub("^X", "", colnames(df2_C121))
 colnames(df3_P1211) = sub("^X", "", colnames(df3_P1211))
 colnames(df3_P121) = sub("^X", "", colnames(df3_P121))
 colnames(df3_C121) = sub("^X", "", colnames(df3_C121))
@@ -190,16 +191,16 @@ colnames(df1_C121) = new_colnames
 # -------------------------------------------------------------------------
 #### FOR CONVERTING DF2, DF3
 
-transform_df <- function(df) {
+transform_df = function(df) {
   # Add a row_id to track the original row order
-  df$row_id <- seq_len(nrow(df))
+  df$row_id = seq_len(nrow(df))
   
   # Melt the dataframe by 'row_id' to keep track of the original rows
-  long_df <- melt(df, id.vars = 'row_id')
+  long_df = melt(df, id.vars = 'row_id')
   
   # Cast the melted dataframe into a wide format with each PDB ID as a row
   # The values will be spread across columns named with the original row numbers
-  new_df <- dcast(long_df, variable ~ row_id, value.var = "value")
+  new_df = dcast(long_df, variable ~ row_id, value.var = "value")
   
   # Return the transformed dataframe
   return(new_df)
@@ -241,39 +242,95 @@ df3_P1211 = data.frame(Spacegroup.ID = 0, df3_P1211)
 df3_P121 = data.frame(Spacegroup.ID = 1, df2_P121)
 df3_C121 = data.frame(Spacegroup.ID = 2, df3_C121)
 # -------------------------------------------------------------------------
-df1_list <- list(df1_P1211, df1_P121, df1_C121)
-df2_list <- list(df2_P1211, df2_P121, df2_C121)
-df3_list <- list(df3_P1211, df3_P121, df3_C121)
-all_df1 <- data.frame(); all_df2 <- data.frame(); all_df3 <- data.frame()
-all_df1 <- bind_rows(df1_P1211, df1_P121, df1_C121)
-all_df2 <- bind_rows(df2_P1211, df2_P121, df2_C121)
-all_df3 <- bind_rows(df3_P1211, df3_P121, df3_C121)
+df1_list = list(df1_P1211, df1_P121, df1_C121)
+df2_list = list(df2_P1211, df2_P121, df2_C121)
+df3_list = list(df3_P1211, df3_P121, df3_C121)
+all_df1 = data.frame(); all_df2 = data.frame(); all_df3 = data.frame()
+all_df1 = bind_rows(df1_P1211, df1_P121, df1_C121)
+all_df2 = bind_rows(df2_P1211, df2_P121, df2_C121)
+all_df3 = bind_rows(df3_P1211, df3_P121, df3_C121)
 # head(all_df1)
 # head(all_df2)
 # head(all_df3)
 # -------------------------------------------------------------------------
-all_df2
 ```
 
+# Context: 
 
-```{r, message=FALSE}
+Crystallography, an interdisciplinary field primarily centered on the study of solid-state chemistry and physics, delves into various aspects of matter. A significant branch of this field, protein crystallography, and its use of X-rays, focus on unraveling the three-dimensional structure and interactions of proteins. This interaction broadly speaking leads to strides in research pertaining to drug and vaccine development. To illustrate its breadth and importance, consider the following examples:
+
+- Investigating the interaction mechanisms between the Sars-Cov2 virus and human cells, a topic that remains somewhat enigmatic.
+
+- Exploring how various proteins within the human body respond to pharmaceuticals, allowing scientists to see how drugs fit into protein structures, a crucial aspect of increasing drug efficiency. 
+
+- Deepening our understanding of photosynthesis by revealing the structure of photosynthetic proteins and complexes, and how these function in the energy transfer.
+
+# Potential Predictors: 
+
+- `Mean.Intensity`: refers to the $\textit{average}$ intensity of the diffracted X-rays. This data is in units of the counted number of photons from the diffracted light. This intensity of the diffracted X-rays is proportional to the square of the structure factor amplitude. This predictor can give insight into the overall electron density and crucial for crystal structure. 
+
+- `Mean.Phase`: Despite the nuances about the "Phase Problem" in crystallography (below if curious), each diffracted wave has a phase angle. The phase problem, central to crystallography, as phases cannot be measured. However, they're still crucial for determining the electron density map. The mean phase represents the  $\textit{average}$ measure of these phase angles across the data set. 
+
+- `a, b, c, alpha, beta, gamma`: These are unit cell parameters which are simply the lengths (a,b,c) and the angles of the unit cell measured in degrees (alpha, beta, gamma). This is fundamental for determining the system and size of the crystal lattice. 
+
+- `Unitcell.Volume`: The volume is calculated directly from the unit cell parameters. This is an indicator of the density of the crystal structure.
+
+- `Crystal.Volume`: Volume of the actual crystal used in the diffraction experiment. This is important for understanding how the size of the crystal affects the diffraction pattern.
+
+- `Vol.Unit.Ratio`: The ratio of the crystal volume to the unit cell volume, also called packing ratio. This is used to understand the packing efficiency of the crystal, in other words how tightly packed each unit cell is.
+
+- `Space Group`: The crystal's group symmetry, this is based on symmetric properties which are crucial for understanding the crystal structure. Note why these are separated is that different group symmetries imply different atomic arrangements, therefore different properties of the crystal.
+
+- `Calc.Structure.Weight`: Computed value to represent the total mass of atoms in a molecule. Particularly in the context of protein crystals, this weight is an important characteristic because it reflects sum of the atomic weights of all the atoms present in the molecule, or repeated unit within the crystal lattice. 
+
+"The phase problem is the problem of information concerning the phase that can occur when making physical measurement [ and ] has to be solved for the determination of a structure from diffraction data." [@wikipedia_phase_problem].
+
+
+# Research Question: 
+
+Let us see whether there is a linear dependence of X-ray diffraction intensities on the number of unit cells exposed to the X-rays. This further refines to the more specific, within the same space group, does the packing ratio have any affect on the diffracted intensity?
+
+# Data Exploration: 
+
+```{r, message=FALSE, echo=T, include=T}
 # To focus on only on numerical values interested in testing.
-columns_to_remove <- c("Spacegroup.ID", "PDB.ID", "a", "b", "c", "Alpha", "Beta", "Gamma", "Max.Intensity", 
+columns_to_remove = c("Spacegroup.ID", "PDB.ID", "a", "b", "c", "Alpha", "Beta", "Gamma", "Max.Intensity", 
                        "Min.Intensity", "MaxMin.Intensity.Dif", "Max.Phase", 
                        "Min.Phase", "MaxMin.Phase.Difference", "PDB.ID")
 numeric_df1_P1211 = df1_P1211[, !(names(df1_P1211) %in% columns_to_remove)]
+# Visualize correlation matrix
+cor_matrix_melt <- melt(cor_matrix <- cor(numeric_df1_P1211))
+ggplot(data = cor_matrix_melt, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Pearson\nCorrelation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 12, hjust = 1),
+        axis.text.y = element_text(size = 12)) +
+  coord_fixed()
+# Using gg
 ggpairs(numeric_df1_P1211, cardinality_threshold = 100)
+```
 
-########## MODELS 
+From the correlation matrices, its easy to see that as volume predictors increase, so does the structure weight. This makes sense, and is not interesting. The question rather, is whether the mean intensity predictor correlated with anything, specifically the packing ratio. As you can see that the largest Pearson's correlation in the matrix is that the predictor `Mean.Intensity` has is with `Structure.Weight` with $0.238$. What we are interested in has a Pearson's correlation value of $-0.03$.
+
+Also notice that the mean intensity and the mean phase have a seeming negative Pearson's correlation. The observed diffraction pattern is a result of the interference of X-rays scattered by electrons in the crystal. Of the diffracted waves, the interference pattern is governed by the intensity and the phase. Hence, there is interplay between when one varies significantly, then this can lead to a destructive interference pattern. 
+
+Another plausible explanation is that certain crystal structures may lead to destructive interference pattern due to the phase angle distributions, resulting in lower intensity.
+
+# Model: 
+
+$$ E\{\text{Mean.Intensity}\}_{P1211} = \beta_0 + \beta_1(\text{Calc.Structure.weight}) + \beta_2(\text{Vol.Unit.Ratio}) $$
+```{r, echo=T, include=T}
+########## MODEL for P1211 
 # -------------------------------------------------------------------------
 m.P1211 = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_P1211)
 par(mfrow=c(2,2))
 plot(m.P1211)
 par(mfrow=c(1,1))
-
 ########## Diagnostics
 # -------------------------------------------------------------------------
-
 # Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
 a = ggplot(data = df1_P1211, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
   geom_point() +
@@ -287,136 +344,64 @@ b = ggplot(data = df1_P1211, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
   labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
        title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
-ggarrange(a, b, ncol = 1)
-
+ggarrange(a,b)
 # This does not show linear relationship off the bat.
-
 # individually
 par(mfrow=c(2,2))
 assumption.1.check.linearity(m.P1211)
 assumption.2.check.outliers(m.P1211) # most definitely influence of outliers.
 assumption.3.check.homoskedasticity(m.P1211)
 assumption.4.check.normality(m.P1211)
-assumption.5.check.independence(m.P1211)
-assumption.6.check.multicollinearity(m.P1211)
 par(mfrow=c(1,1))
-# check for multicolinearity again.
-anova(m.P1211)
+```
+
+```{r}
+assumption.5.check.independence(m.P1211)
 # Visualize outliers, leverage points, and influential points
 car::influencePlot(m.P1211,id=list(labels=row.names(df1_P1211)))
 # Outliers detected rows: 4, 53, 59, 5
-# -------------------------------------------------------------------------
 ```
 
-HELP
 
+After checking the assumption, this model passes except for potentially having some outliers. As indicated on the scale-location plot, and qqplot.
 
+# Assumption 5: Cook's Distance: 
 
+Cook's Distance is a measure to estimate the influence of all the data points when using ordinary least squares in regression. This helps point out outliers with a strong influence on  the data. Since the assumption 5 check, used the `cooks.distance()` function, and gave an autocorrelation of $0.05725871$, this means that there's a low correlation between residuals. Thus, the residuals are independent.
 
+D-W Test Statistic:
+Autocorrelation is the measure usually used in time series data which detects whether there is any correlation between the series of values.  
 
+This test statistic tests that the null hypothesis has no autocorrelation among the residuals. With a range of 0 to 4 for this particular test statistic shows a value very close to 2. When 4 means that there is positive autocorrelation, and 0 indicates that there's negative autocorrelation. Thus, there's little to no autocorrelation among the residuals in this model, since they're independent. 
 
+P-Value:
+Under the null hypothesis, the p-value states that there is no autocorrelation. With a p-value typically above $0.05$, we fail to reject the null hypothesis. This does not give enough evidence to reject the null hypothesis. With a p-value of $0.496$, this model indicates that there is strong statistical evidence of the contrary.
 
+Influence Plot:
+As the influence plot shows, there is some high leverage points in this data.
 
 ```{r}
-# -------------------------------------------------------------------------
-# TRIAL
-percentile.90 = apply(all_df2[, -c(1,2)], 1, function(x) quantile(x, 0.9, na.rm=T)
-top.10.percent.df <- all_df2[ mapply(function(row, threshold) any(row > threshold), all_df2[, -c(1,2)], percentile.90), ]
-top.10.percent.df
-
-
-
-top.10.percent.logical = all_df2[,c(1,2)] > percentile.90
-row.in.top.10.percent = rowSums(top.10.percent.logical) > 0
-top.10.df = all_df2[row.in.top.10.percent, ]
-
-
-
-# -------------------------------------------------------------------------
-plot(Mean.Intensity ~ Spacegroup.ID, all_df1)
-
-plot(m.P1211)
-
-car::avPlots(m.P1211)
-
-ncol(all_df2)
-
-mean.top10 = apply(all_df2[, 3:ncol(all_df2)], MARGIN = 1, FUN = function(x) mean(sort(x, decreasing=T)[1:(337)]))
-mean.top10
-
-head(mean.top10)
-
-m = lm(mean.top10 ~ df1_P1211$Vol.Unit.Ratio)
-
-
-length(df1_P1211$Vol.Unit.Ratio)
-length(mean.top10)
-
+assumption.6.check.multicollinearity(m.P1211)
 ```
 
+# Assumption 6: Multicolinearity
 
-```{r}
-# every crystal in df2_all corresponds to the unique intensity values. Which we want to try and model.
-# We retrieve the top 90th percentile of all of the rows (of the same crystal), and computes the mean value which is greater or equal to that percentile.
-mean.top10 <- apply(all_df2[, 3:ncol(all_df2)], MARGIN = 1, FUN = function(x) {
-  non_missing_values <- x[!is.na(x)] # Remove NAs
-  if (length(non_missing_values) > 0) {
-    mean(non_missing_values[non_missing_values >= quantile(non_missing_values, probs = 0.9, na.rm = TRUE)])
-  } else {
-    NA # Handle rows with no non-missing values
-  }
-})
+With a VIF score of around 1, this suggests that there is very low multicolinearity in the model. We can proceed with this model that there are low correlation between the multiple independent variables in the model. Since these show VIF values of roughly around 1, these are perfectly colinear.
 
-#align the mean.top10 and the vol.unit.ratio by selecting all of the 299 rows of df1_P1211$Vol.Unit.Ratio to match the length of mean.top10, and creates a new df of the vectors.
-aligned_df <- data.frame(mean.top10, Vol.Unit.Ratio = df1_P1211$Vol.Unit.Ratio[1:299])
-aligned_df <- aligned_df[!is.na(df1_P1211$Vol.Unit.Ratio), ]
-aligned_df
-
-m.percentile.P1211 <- lm(mean.top10 ~ Vol.Unit.Ratio, data = aligned_df)
-par(mfrow = c(2, 2))
-plot(m.percentile.P1211)
-par(mfrow = c(1, 1))
-
-# -------------------------------------------------------------------------
-# Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
-ggplot(data = aligned_df, aes(x = mean.top10, y = Vol.Unit.Ratio)) +
-  geom_point() +
-  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-  labs(x = "mean.top10", y = "vol.unit.ratio", 
-       title = "Scatterplot of mean.top10 vs. vol.unit.ratio")
-
-fitted = fitted(m)
-residuals = residuals(m)
-residuals.df = data.frame(fitted, residuals)
-
-ggplot(data = residuals.df, aes(x = fitted, y = residuals)) + 
-  geom_point() +
- geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-  labs(x = "fitted", y = "residuals", 
-       title = "fitted vs. residuals")
-# -------------------------------------------------------------------------
-
-```
-
-
-
-
+Proceeding to see whether removing high influence points, improves the model fit. 
 
 ```{r, warning=FALSE, message=FALSE}
 ########## Treating outliers.
 # -------------------------------------------------------------------------
 cooks.d = cooks.distance(m.P1211)
-max(cooks.d)
-min(cooks.d)
-3*mean(cooks.d)
 influence = cooks.d[(cooks.d > (3*mean(cooks.d, na.rm = T)))]
 influence # see that most of the rows stated above are in this list
 row.influence = names(influence)
 outliers = df1_P1211[row.influence,]
 df1_P1211.reduced = df1_P1211 %>% anti_join(outliers)
-
+########## Any improvement to the model?
+# -------------------------------------------------------------------------
 m.P1211.R = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_P1211.reduced)
-vif(m.P1211.R) # even lower but barely
 # -------------------------------------------------------------------------
 # Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
 a = ggplot(data = df1_P1211.reduced, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
@@ -431,11 +416,556 @@ b = ggplot(data = df1_P1211.reduced, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)
   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
   labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
        title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
-ggarrange(a,b, nrow =2)
+ggarrange(a,b)
 # -------------------------------------------------------------------------
+vif(m.P1211.R) # even lower but barely
+```
+
+
+```{r}
 car::influencePlot(m.P1211.R,id=list(labels=row.names(df1_P1211.reduced))) # did not help much
+# -------------------------------------------------------------------------
+summary(m.P1211.R)
+r.a.2 = summary(m.P1211)$adj.r.squared
+r.a.2.reduced = summary(m.P1211.R)$adj.r.squared
+r.a.2.reduced - r.a.2
+# -------------------------------------------------------------------------
+```
+```{r, echo=T}
+par(mfrow=c(1,2))
+# -------------------------------------------------------------------------
+# For Calc.Structure.weight
+calc_structure_weight_mean <- mean(df1_P1211.reduced$Calc.Structure.weight, na.rm = TRUE)
+calc_structure_weight_range <- seq(from = min(df1_P1211.reduced$Calc.Structure.weight), 
+                                   to = max(df1_P1211.reduced$Calc.Structure.weight), length.out = 100)
+vol_unit_ratio_mean <- mean(df1_P1211.reduced$Vol.Unit.Ratio, na.rm = TRUE)
+
+x_new <- data.frame(Calc.Structure.weight = calc_structure_weight_range, 
+                    Vol.Unit.Ratio = rep(vol_unit_ratio_mean, 100))
+
+conf.int.1 <- predict(m.P1211.R, newdata = x_new, interval = "confidence")
+
+plot(x_new$Calc.Structure.weight, conf.int.1[, "fit"], type = "l", col = "blue", 
+     ylim = range(conf.int.1[, c("lwr", "upr")]), 
+     ylab = "Mean Intensity", xlab = "Calc Structure Weight")
+lines(x_new$Calc.Structure.weight, conf.int.1[, "lwr"], col = "red", lty = 2)
+lines(x_new$Calc.Structure.weight, conf.int.1[, "upr"], col = "red", lty = 2)
+# -------------------------------------------------------------------------
+# For Vol.Unit.Ratio
+vol_unit_ratio_range <- seq(from = min(df1_P1211.reduced$Vol.Unit.Ratio), 
+                            to = max(df1_P1211.reduced$Vol.Unit.Ratio), length.out = 100)
+
+x_new <- data.frame(Vol.Unit.Ratio = vol_unit_ratio_range, 
+                    Calc.Structure.weight = rep(calc_structure_weight_mean, 100))
+
+conf.int.2 <- predict(m.P1211.R, newdata = x_new, interval = "confidence")
+
+plot(x_new$Vol.Unit.Ratio, conf.int.2[, "fit"], type = "l", col = "blue", 
+     ylim = range(conf.int.2[, c("lwr", "upr")]), 
+     ylab = "Mean Intensity", xlab = "Vol.Unit.Ratio")
+lines(x_new$Vol.Unit.Ratio, conf.int.2[, "lwr"], col = "red", lty = 2)
+lines(x_new$Vol.Unit.Ratio, conf.int.2[, "upr"], col = "red", lty = 2)
+# -------------------------------------------------------------------------
+par(mfrow=c(1,1))
+confint(m.P1211.R)
+```
+By reducing the data set for this space group, there's an observed negative slope. When the packing ratio increases by 1 unit, there's a corresponding decrease in the average number of counted photons by $-244.2656$, holding all other predictors constant. 
+
+The confidence interval plots, and summary show that the linear relation between mean intensity and the packing ratio varies widely. Note that this interval's lower bound is negative, and the upper bound is positive. Thus, the slope could be 0. 
+
+Before testing whether the packing ratio can be dropped from the model, other space groups should be investigated.
+
+## For P121 Space Group
+
+```{r, warning=F,message=F, echo=T}
+########## MODEL for P121
+# -------------------------------------------------------------------------
+m.P121 = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_P121)
+par(mfrow=c(2,2))
+plot(m.P1211)
+par(mfrow=c(1,1))
+########## Diagnostics
+# -------------------------------------------------------------------------
+# Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
+a = ggplot(data = df1_P121, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
+
+# Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
+b = ggplot(data = df1_P121, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+ggarrange(a,b)
+# This does not show linear relationship off the bat.
+# individually
+par(mfrow=c(2,2))
+assumption.1.check.linearity(m.P121)
+assumption.2.check.outliers(m.P121) # most definitely influence of outliers.
+assumption.3.check.homoskedasticity(m.P121)
+assumption.4.check.normality(m.P121)
+par(mfrow=c(1,1))
+assumption.5.check.independence(m.P121)
+# Visualize outliers, leverage points, and influential points
+car::influencePlot(m.P121,id=list(labels=row.names(df1_P121)))
+# Outliers detected rows: 4, 53, 59, 5
+########## Treating outliers.
+# -------------------------------------------------------------------------
+cooks.d = cooks.distance(m.P1211)
+influence = cooks.d[(cooks.d > (3*mean(cooks.d, na.rm = T)))]
+influence # see that most of the rows stated above are in this list
+row.influence = names(influence)
+outliers = df1_P121[row.influence,]
+df1_P121.reduced = df1_P121 %>% anti_join(outliers)
+########## Any improvement to the model?
+# -------------------------------------------------------------------------
+m.P121.R = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_P121.reduced)
+# -------------------------------------------------------------------------
+# Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
+a = ggplot(data = df1_P121.reduced, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
+
+# Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
+b =ggplot(data = df1_P121.reduced, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+ggarrange(a,b)
+# -------------------------------------------------------------------------
+par(mfrow=c(1,2))
+# -------------------------------------------------------------------------
+# For Calc.Structure.weight
+calc_structure_weight_mean <- mean(df1_P121.reduced$Calc.Structure.weight, na.rm = TRUE)
+calc_structure_weight_range <- seq(from = min(df1_P121.reduced$Calc.Structure.weight), 
+                                   to = max(df1_P121.reduced$Calc.Structure.weight), length.out = 100)
+vol_unit_ratio_mean <- mean(df1_P121.reduced$Vol.Unit.Ratio, na.rm = TRUE)
+
+x_new <- data.frame(Calc.Structure.weight = calc_structure_weight_range, 
+                    Vol.Unit.Ratio = rep(vol_unit_ratio_mean, 100))
+
+conf.int.1 <- predict(m.P121.R, newdata = x_new, interval = "confidence")
+
+plot(x_new$Calc.Structure.weight, conf.int.1[, "fit"], type = "l", col = "blue", 
+     ylim = range(conf.int.1[, c("lwr", "upr")]), 
+     ylab = "Mean Intensity", xlab = "Calc Structure Weight")
+lines(x_new$Calc.Structure.weight, conf.int.1[, "lwr"], col = "red", lty = 2)
+lines(x_new$Calc.Structure.weight, conf.int.1[, "upr"], col = "red", lty = 2)
+# -------------------------------------------------------------------------
+# For Vol.Unit.Ratio
+vol_unit_ratio_range <- seq(from = min(df1_P121.reduced$Vol.Unit.Ratio), 
+                            to = max(df1_P121.reduced$Vol.Unit.Ratio), length.out = 100)
+
+x_new <- data.frame(Vol.Unit.Ratio = vol_unit_ratio_range, 
+                    Calc.Structure.weight = rep(calc_structure_weight_mean, 100))
+
+conf.int.2 <- predict(m.P121.R, newdata = x_new, interval = "confidence")
+
+plot(x_new$Vol.Unit.Ratio, conf.int.2[, "fit"], type = "l", col = "blue", 
+     ylim = range(conf.int.2[, c("lwr", "upr")]), 
+     ylab = "Mean Intensity", xlab = "Vol.Unit.Ratio")
+lines(x_new$Vol.Unit.Ratio, conf.int.2[, "lwr"], col = "red", lty = 2)
+lines(x_new$Vol.Unit.Ratio, conf.int.2[, "upr"], col = "red", lty = 2)
+# -------------------------------------------------------------------------
+par(mfrow=c(1,1))
+confint(m.P121.R)
+```
+## For C121 Space Group
+
+```{r, message=F, warning=F, echo=T}
+########## MODEL for C121 
+# -------------------------------------------------------------------------
+m.C121 = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_C121)
+par(mfrow=c(2,2))
+plot(m.C121)
+par(mfrow=c(1,1))
+########## Diagnostics
+# -------------------------------------------------------------------------
+# Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
+a = ggplot(data = df1_C121, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
+
+# Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
+b = ggplot(data = df1_C121, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+ggarrange(a,b)
+# This does not show linear relationship off the bat.
+# individually
+par(mfrow=c(2,2))
+assumption.1.check.linearity(m.C121)
+assumption.2.check.outliers(m.C121) # most definitely influence of outliers.
+assumption.3.check.homoskedasticity(m.C121)
+assumption.4.check.normality(m.C121)
+par(mfrow=c(1,1))
+# Visualize outliers, leverage points, and influential points
+car::influencePlot(m.C121,id=list(labels=row.names(df1_C121)))
+# Outliers detected rows: 4, 53, 59, 5
+########## Treating outliers.
+# -------------------------------------------------------------------------
+cooks.d = cooks.distance(m.C121)
+influence = cooks.d[(cooks.d > (3*mean(cooks.d, na.rm = T)))]
+influence # see that most of the rows stated above are in this list
+row.influence = names(influence)
+outliers = df1_C121[row.influence,]
+df1_C121.reduced = df1_C121 %>% anti_join(outliers)
+########## Any improvement to the model?
+# -------------------------------------------------------------------------
+m.C121.R = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_C121.reduced)
+# -------------------------------------------------------------------------
+# Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
+a = ggplot(data = df1_C121.reduced, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
+
+# Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
+b = ggplot(data = df1_C121.reduced, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+ggarrange(a,b)
+# -------------------------------------------------------------------------
+par(mfrow=c(1,2))
+# -------------------------------------------------------------------------
+# For Calc.Structure.weight
+calc_structure_weight_mean <- mean(df1_C121.reduced$Calc.Structure.weight, na.rm = TRUE)
+calc_structure_weight_range <- seq(from = min(df1_C121.reduced$Calc.Structure.weight), 
+                                   to = max(df1_C121.reduced$Calc.Structure.weight), length.out = 100)
+vol_unit_ratio_mean <- mean(df1_C121.reduced$Vol.Unit.Ratio, na.rm = TRUE)
+
+x_new <- data.frame(Calc.Structure.weight = calc_structure_weight_range, 
+                    Vol.Unit.Ratio = rep(vol_unit_ratio_mean, 100))
+
+conf.int.1 <- predict(m.C121.R, newdata = x_new, interval = "confidence")
+
+plot(x_new$Calc.Structure.weight, conf.int.1[, "fit"], type = "l", col = "blue", 
+     ylim = range(conf.int.1[, c("lwr", "upr")]), 
+     ylab = "Mean Intensity", xlab = "Calc Structure Weight")
+lines(x_new$Calc.Structure.weight, conf.int.1[, "lwr"], col = "red", lty = 2)
+lines(x_new$Calc.Structure.weight, conf.int.1[, "upr"], col = "red", lty = 2)
+# -------------------------------------------------------------------------
+# For Vol.Unit.Ratio
+vol_unit_ratio_range <- seq(from = min(df1_C121.reduced$Vol.Unit.Ratio), 
+                            to = max(df1_C121.reduced$Vol.Unit.Ratio), length.out = 100)
+
+x_new <- data.frame(Vol.Unit.Ratio = vol_unit_ratio_range, 
+                    Calc.Structure.weight = rep(calc_structure_weight_mean, 100))
+
+conf.int.2 <- predict(m.C121.R, newdata = x_new, interval = "confidence")
+
+plot(x_new$Vol.Unit.Ratio, conf.int.2[, "fit"], type = "l", col = "blue", 
+     ylim = range(conf.int.2[, c("lwr", "upr")]), 
+     ylab = "Mean Intensity", xlab = "Vol.Unit.Ratio")
+lines(x_new$Vol.Unit.Ratio, conf.int.2[, "lwr"], col = "red", lty = 2)
+lines(x_new$Vol.Unit.Ratio, conf.int.2[, "upr"], col = "red", lty = 2)
+# -------------------------------------------------------------------------
+par(mfrow=c(1,1))
+confint(m.C121.R)
+```
+
+All of the steps for space group P1211 seem to hold for P121, and C121 space groups. As seen from the plot below, there's not a lot of variation in the points of the three space groups. With P1211 having a `Spacegroup.ID` of 0, P121 that of 1, and C121 has 2.
+
+```{r, message=F,warning=F}
 plot(all_df1$Spacegroup.ID, all_df1$Mean.Intensity, data=all_df1) # does not look like significant difference among the spacegroups.
- 
+```
+```{r, warning=F}
+############## FULL MODEL
+# Since the mean intensity does not seem to change for the given spacegroups...
+model.all = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = all_df1)
+par(mfrow=c(2,2))
+plot(m.C121)
+par(mfrow=c(1,1))
+summary(model.all)
+car::influencePlot(model.all)
+########## Diagnostics
+# -------------------------------------------------------------------------
+# Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
+a = ggplot(data = all_df1, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
+
+# Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
+b = ggplot(data = all_df1, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+ggarrange(a,b)
+# -------------------------------------------------------------------------
+######### Remove outliers for model.all
+cooks.d = cooks.distance(model.all)
+influence = cooks.d[(cooks.d > (3*mean(cooks.d, na.rm = T)))]
+influence # see that most of the rows stated above are in this list
+row.influence = names(influence)
+outliers = all_df1[row.influence,]
+all_df1.reduced = all_df1 %>% anti_join(outliers)
+########## Any improvement to the model?
+model.all.reduced = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = all_df1.reduced)
+par(mfrow=c(2,2))
+plot(model.all.reduced)
+par(mfrow=c(1,1))
+summary(model.all.reduced)
+car::influencePlot(model.all.reduced)
+# -------------------------------------------------------------------------
+par(mfrow=c(1,2))
+# -------------------------------------------------------------------------
+# For Calc.Structure.weight
+calc_structure_weight_mean <- mean(all_df1.reduced$Calc.Structure.weight, na.rm = TRUE)
+calc_structure_weight_range <- seq(from = min(all_df1.reduced$Calc.Structure.weight), 
+                                   to = max(all_df1.reduced$Calc.Structure.weight), length.out = 100)
+vol_unit_ratio_mean <- mean(all_df1.reduced$Vol.Unit.Ratio, na.rm = TRUE)
+
+x_new <- data.frame(Calc.Structure.weight = calc_structure_weight_range, 
+                    Vol.Unit.Ratio = rep(vol_unit_ratio_mean, 100))
+
+conf.int.1 <- predict(model.all.reduced, newdata = x_new, interval = "confidence")
+
+plot(x_new$Calc.Structure.weight, conf.int.1[, "fit"], type = "l", col = "blue", 
+     ylim = range(conf.int.1[, c("lwr", "upr")]), 
+     ylab = "Mean Intensity", xlab = "Calc Structure Weight")
+lines(x_new$Calc.Structure.weight, conf.int.1[, "lwr"], col = "red", lty = 2)
+lines(x_new$Calc.Structure.weight, conf.int.1[, "upr"], col = "red", lty = 2)
+# -------------------------------------------------------------------------
+# For Vol.Unit.Ratio
+vol_unit_ratio_range <- seq(from = min(all_df1.reduced$Vol.Unit.Ratio), 
+                            to = max(all_df1.reduced$Vol.Unit.Ratio), length.out = 100)
+
+x_new <- data.frame(Vol.Unit.Ratio = vol_unit_ratio_range, 
+                    Calc.Structure.weight = rep(calc_structure_weight_mean, 100))
+
+conf.int.2 <- predict(model.all.reduced, newdata = x_new, interval = "confidence")
+
+plot(x_new$Vol.Unit.Ratio, conf.int.2[, "fit"], type = "l", col = "blue", 
+     ylim = range(conf.int.2[, c("lwr", "upr")]), 
+     ylab = "Mean Intensity", xlab = "Vol.Unit.Ratio")
+lines(x_new$Vol.Unit.Ratio, conf.int.2[, "lwr"], col = "red", lty = 2)
+lines(x_new$Vol.Unit.Ratio, conf.int.2[, "upr"], col = "red", lty = 2)
+# -------------------------------------------------------------------------
+par(mfrow=c(1,1))
+confint(m.C121.R)
+```
+
+
+```{r, warning=F, message=F}
+# Since the mean intensity does not seem to change for the given spacegroups...
+model.all = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = all_df1.reduced)
+par(mfrow=c(2,2))
+plot(m.C121)
+par(mfrow=c(1,1))
+summary(model.all)
+car::influencePlot(model.all)
+########## Diagnostics
+# -------------------------------------------------------------------------
+# Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
+ggplot(data = all_df1, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
+# -------------------------------------------------------------------------
+########## Any improvement to the model?
+model.all.R = lm(Mean.Intensity ~ Calc.Structure.weight, data = all_df1.reduced)
+par(mfrow=c(2,2))
+plot(model.all.R)
+par(mfrow=c(1,1))
+summary(model.all.R)
+car::influencePlot(model.all.R)
+# -------------------------------------------------------------------------
+# For Calc.Structure.weight
+calc_structure_weight_mean <- mean(all_df1.reduced$Calc.Structure.weight, na.rm = TRUE)
+calc_structure_weight_range <- seq(from = min(all_df1.reduced$Calc.Structure.weight), 
+                                   to = max(all_df1.reduced$Calc.Structure.weight), length.out = 100)
+vol_unit_ratio_mean <- mean(all_df1.reduced$Vol.Unit.Ratio, na.rm = TRUE)
+
+x_new <- data.frame(Calc.Structure.weight = calc_structure_weight_range, 
+                    Vol.Unit.Ratio = rep(vol_unit_ratio_mean, 100))
+
+conf.int.1 <- predict(model.all.reduced, newdata = x_new, interval = "confidence")
+
+plot(x_new$Calc.Structure.weight, conf.int.1[, "fit"], type = "l", col = "blue", 
+     ylim = range(conf.int.1[, c("lwr", "upr")]), 
+     ylab = "Mean Intensity", xlab = "Calc Structure Weight")
+lines(x_new$Calc.Structure.weight, conf.int.1[, "lwr"], col = "red", lty = 2)
+lines(x_new$Calc.Structure.weight, conf.int.1[, "upr"], col = "red", lty = 2)
+# -------------------------------------------------------------------------
+confint(model.all.R)
+```
+# Hypothesis Test: 
+Testing whether the the reduced linear model provides a better fit. Going to use $\alpha = 0.05$ as the significance value. 
+
+1. Assumptions: $\varepsilon \overset{iid}{\sim} N(0,1)$
+
+Alternatives: 
+Define Models: 
+$Y$ as `Mean.Intensity`.
+$X_1$ as `Calc.Structure.weight`.
+$X_2$ as `Vol.Unit.Ratio`.
+
+$E\{Y\}_{\text{reduced.model}} = \beta_0 + \beta_1X_1$
+$E\{Y\}_{\text{full.model}} = \beta_0 +  \beta_1X_1 + \beta_2X_2$
+
+2. Hypotheses:
+$$H_0: \beta_{2} = 0$$
+$$H_1: \beta_{2} \neq 0$$
+Decision Rule:
+$$p_{val} \le \alpha = 0.05 \hspace{.2cm} \Rightarrow \hspace{.2cm} \text{ reject null hypothesis}$$
+$$p_{val} > \alpha = 0.05 \hspace{.2cm} \Rightarrow \hspace{.2cm} \text{ do not reject null hypothesis}$$
+3. Test Statistic: 
+
+```{r}
+anova.table = anova(model.all, model.all.R)
+anova.table
+F.crit = anova.table[2,5]
+```
+4. P-Value: 
+
+```{r}
+alpha = 0.05
+pval = anova.table[2,6]
+pval < alpha
+```
+
+5. Conclusion: 
+Since the $p_{\text{value}}$ is less than the specified significance value ($\alpha = 0.05$) by the specified decision rule, we have sufficient evidence to reject the null hypothesis. There is a significant effect on the calculated structure weight (in kilo Daltons) and the mean intensity (number of photons). Therefore, the calculated structure weight contributes meaningfully to the variations of the mean intensity. 
+
+Warranting further investigation, this result suggests that the $\textit{true}$ structure weight also has a significant effect on the $\text{observed}$, $\textit{experimental}$ intensity values. 
+
+
+```{r}
+# -------------------------------------------------------------------------
+# TRIAL
+# percentile.90 = apply(all_df2[, -c(1,2)], 1, function(x) quantile(x, 0.9, na.rm=T)
+# top.10.percent.df = all_df2[ mapply(function(row, threshold) any(row > threshold), all_df2[, -c(1,2)], percentile.90), ]
+# top.10.percent.df
+# 
+# 
+# 
+# top.10.percent.logical = all_df2[,c(1,2)] > percentile.90
+# row.in.top.10.percent = rowSums(top.10.percent.logical) > 0
+# top.10.df = all_df2[row.in.top.10.percent, ]
+# 
+# 
+# 
+# # -------------------------------------------------------------------------
+# plot(Mean.Intensity ~ Spacegroup.ID, all_df1)
+# 
+# plot(m.P1211)
+# 
+# car::avPlots(m.P1211)
+# 
+# ncol(all_df2)
+# 
+# mean.top10 = apply(all_df2[, 3:ncol(all_df2)], MARGIN = 1, FUN = function(x) mean(sort(x, decreasing=T)[1:(337)]))
+# mean.top10
+# 
+# head(mean.top10)
+# 
+# m = lm(mean.top10 ~ df1_P1211$Vol.Unit.Ratio)
+# 
+# 
+# length(df1_P1211$Vol.Unit.Ratio)
+# length(mean.top10)
+
+```
+
+
+```{r}
+# every crystal in df2_all corresponds to the unique intensity values. Which we want to try and model.
+# # We retrieve the top 90th percentile of all of the rows (of the same crystal), and computes the mean value which is greater or equal to that percentile.
+# mean.top10 = apply(all_df2[, 3:ncol(all_df2)], MARGIN = 1, FUN = function(x) {
+#   non_missing_values = x[!is.na(x)] # Remove NAs
+#   if (length(non_missing_values) > 0) {
+#     mean(non_missing_values[non_missing_values >= quantile(non_missing_values, probs = 0.9, na.rm = TRUE)])
+#   } else {
+#     NA # Handle rows with no non-missing values
+#   }
+# })
+# 
+# #align the mean.top10 and the vol.unit.ratio by selecting all of the 299 rows of df1_P1211$Vol.Unit.Ratio to match the length of mean.top10, and creates a new df of the vectors.
+# aligned_df = data.frame(mean.top10, Vol.Unit.Ratio = df1_P1211$Vol.Unit.Ratio[1:299])
+# aligned_df = aligned_df[!is.na(df1_P1211$Vol.Unit.Ratio), ]
+# aligned_df
+# 
+# m.percentile.P1211 = lm(mean.top10 ~ Vol.Unit.Ratio, data = aligned_df)
+# par(mfrow = c(2, 2))
+# plot(m.percentile.P1211)
+# par(mfrow = c(1, 1))
+# 
+# # -------------------------------------------------------------------------
+# # Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
+# ggplot(data = aligned_df, aes(x = mean.top10, y = Vol.Unit.Ratio)) +
+#   geom_point() +
+#   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+#   labs(x = "mean.top10", y = "vol.unit.ratio", 
+#        title = "Scatterplot of mean.top10 vs. vol.unit.ratio")
+# 
+# fitted = fitted(m)
+# residuals = residuals(m)
+# residuals.df = data.frame(fitted, residuals)
+# 
+# ggplot(data = residuals.df, aes(x = fitted, y = residuals)) + 
+#   geom_point() +
+#  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+#   labs(x = "fitted", y = "residuals", 
+#        title = "fitted vs. residuals")
+# # -------------------------------------------------------------------------
+
+```
+
+
+
+
+
+```{r, warning=FALSE, message=FALSE}
+# ########## Treating outliers.
+# # -------------------------------------------------------------------------
+# cooks.d = cooks.distance(m.P1211)
+# max(cooks.d)
+# min(cooks.d)
+# 3*mean(cooks.d)
+# influence = cooks.d[(cooks.d > (3*mean(cooks.d, na.rm = T)))]
+# influence # see that most of the rows stated above are in this list
+# row.influence = names(influence)
+# outliers = df1_P1211[row.influence,]
+# df1_P1211.reduced = df1_P1211 %>% anti_join(outliers)
+# 
+# m.P1211.R = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_P1211.reduced)
+# vif(m.P1211.R) # even lower but barely
+# # -------------------------------------------------------------------------
+# # Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
+# a = ggplot(data = df1_P1211.reduced, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
+#   geom_point() +
+#   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+#   labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
+#        title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
+# 
+# # Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
+# b = ggplot(data = df1_P1211.reduced, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+#   geom_point() +
+#   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+#   labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
+#        title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+# ggarrange(a,b, nrow =2)
+# # -------------------------------------------------------------------------
+# car::influencePlot(m.P1211.R,id=list(labels=row.names(df1_P1211.reduced))) # did not help much
+# plot(all_df1$Spacegroup.ID, all_df1$Mean.Intensity, data=all_df1) # does not look like significant difference among the spacegroups.
+#  
 
 
 
@@ -501,89 +1031,89 @@ With a VIF score of around 1, this suggests that there is very low multicolinear
 
 
 ```{r,message=FALSE, warning=FALSE}
-
-# trying
-
-########## CURVILINEAR MODELS 
-# -------------------------------------------------------------------------
-ggpairs(numeric_df1_P1211, cardinality_threshold = 100)
-
-# centering 
-numeric_df1_P1211$Vol.Unit.Ratio.c <- numeric_df1_P1211$Vol.Unit.Ratio - mean(numeric_df1_P1211$Vol.Unit.Ratio)
-numeric_df1_P1211$Vol.Unit.Ratio.c.2 <- numeric_df1_P1211$Vol.Unit.Ratio.c^2
-
-m.poly.P1211 <- lm(Mean.Intensity ~ Vol.Unit.Ratio.c + Vol.Unit.Ratio.c.2, data = numeric_df1_P1211)
-par(mfrow=c(2,2))
-plot(m.poly.P1211)
-par(mfrow=c(1,1))
-
-car::vif(m.poly.P1211)
-
-cat("Adjusted R-squared:", summary(m.poly.P1211)$adj.r.squared, "\n") #!?
-
-ggplot(data = numeric_df1_P1211, aes(x = Vol.Unit.Ratio.c, y = Mean.Intensity)) +
-  geom_point() +  # Add scatterplot points
-  geom_smooth(method = "lm", formula = y ~ poly(x, 2), col = "red") +  # Add polynomial regression fit
-  labs(x = "Centered Vol.Unit.Ratio", y = "Mean.Intensity",
-       title = "Polynomial Regression Fit of Mean.Intensity vs. Centered Vol.Unit.Ratio")
-
-fitted_values = fitted(m.poly.P1211)
-residuals = resid(m.poly.P1211)
-residuals_df = data.frame(Fitted = fitted_values, Residuals = residuals)
-
-ggplot(data = residuals_df, aes(x = Fitted, y = Residuals)) +
-  geom_point() +  # Add scatterplot points
-  geom_hline(yintercept = 0, col = "red") +  # Add horizontal reference line at y = 0
-  labs(x = "Fitted Values", y = "Residuals",
-       title = "Residuals vs. Fitted Values for Polynomial Model") 
-
-# -------------------------------------------------------------------------
-######## TAKE CARE OF LEVERAGE POINTS
-car::influencePlot(m.poly.P1211)
-# high leverage point at row, 53
-# large influence at rows, 5, 59
-
-cooks.d = cooks.distance(m.poly.P1211)
-# Plot Cook's Distance
-plot(cooks.d, pch = 20, main = "Cook's Distance Plot", xlab = "Observation Index", ylab = "Cook's Distance")
-abline(h = 4 / length(cooks.d), col = "red")  #threshold line
-
-# Identify influential points
-influence = which(cooks.d > 4 / length(cooks.d))
-cat("Influential point(s) based on Cook's distance:", influence, "\n")
-row.influence = names(influence)
-outliers = numeric_df1_P1211[row.influence,]
-numeric_df1_P1211_R = numeric_df1_P1211 %>% anti_join(outliers)
-
-# -------------------------------------------------------------------------
-########### Try again without outliers
-numeric_df1_P1211_R$Vol.Unit.Ratio.c <- numeric_df1_P1211_R$Vol.Unit.Ratio - mean(numeric_df1_P1211_R$Vol.Unit.Ratio)
-numeric_df1_P1211_R$Vol.Unit.Ratio.c.2 <- numeric_df1_P1211_R$Vol.Unit.Ratio.c^2
-
-m.poly.P1211 <- lm(Mean.Intensity ~ Vol.Unit.Ratio.c + Vol.Unit.Ratio.c.2, data = numeric_df1_P1211_R)
-par(mfrow=c(2,2))
-plot(m.poly.P1211)
-par(mfrow=c(1,1))
-
-car::vif(m.poly.P1211)
-
-cat("Adjusted R-squared:", summary(m.poly.P1211)$adj.r.squared, "\n") #!?
-
-ggplot(data = numeric_df1_P1211_R, aes(x = Vol.Unit.Ratio.c, y = Mean.Intensity)) +
-  geom_point() +  # Add scatterplot points
-  geom_smooth(method = "lm", formula = y ~ poly(x, 2), col = "red") +  # Add polynomial regression fit
-  labs(x = "Centered Vol.Unit.Ratio", y = "Mean.Intensity",
-       title = "Polynomial Regression Fit of Mean.Intensity vs. Centered Vol.Unit.Ratio")
-
-fitted_values = fitted(m.poly.P1211)
-residuals = resid(m.poly.P1211)
-residuals_df = data.frame(Fitted = fitted_values, Residuals = residuals)
-
-ggplot(data = residuals_df, aes(x = Fitted, y = Residuals)) +
-  geom_point() +  # Add scatterplot points
-  geom_hline(yintercept = 0, col = "red") +  # Add horizontal reference line at y = 0
-  labs(x = "Fitted Values", y = "Residuals",
-       title = "Residuals vs. Fitted Values for Polynomial Model") 
+# 
+# # trying
+# 
+# ########## CURVILINEAR MODELS 
+# # -------------------------------------------------------------------------
+# ggpairs(numeric_df1_P1211, cardinality_threshold = 100)
+# 
+# # centering 
+# numeric_df1_P1211$Vol.Unit.Ratio.c = numeric_df1_P1211$Vol.Unit.Ratio - mean(numeric_df1_P1211$Vol.Unit.Ratio)
+# numeric_df1_P1211$Vol.Unit.Ratio.c.2 = numeric_df1_P1211$Vol.Unit.Ratio.c^2
+# 
+# m.poly.P1211 = lm(Mean.Intensity ~ Vol.Unit.Ratio.c + Vol.Unit.Ratio.c.2, data = numeric_df1_P1211)
+# par(mfrow=c(2,2))
+# plot(m.poly.P1211)
+# par(mfrow=c(1,1))
+# 
+# car::vif(m.poly.P1211)
+# 
+# cat("Adjusted R-squared:", summary(m.poly.P1211)$adj.r.squared, "\n") #!?
+# 
+# ggplot(data = numeric_df1_P1211, aes(x = Vol.Unit.Ratio.c, y = Mean.Intensity)) +
+#   geom_point() +  # Add scatterplot points
+#   geom_smooth(method = "lm", formula = y ~ poly(x, 2), col = "red") +  # Add polynomial regression fit
+#   labs(x = "Centered Vol.Unit.Ratio", y = "Mean.Intensity",
+#        title = "Polynomial Regression Fit of Mean.Intensity vs. Centered Vol.Unit.Ratio")
+# 
+# fitted_values = fitted(m.poly.P1211)
+# residuals = resid(m.poly.P1211)
+# residuals_df = data.frame(Fitted = fitted_values, Residuals = residuals)
+# 
+# ggplot(data = residuals_df, aes(x = Fitted, y = Residuals)) +
+#   geom_point() +  # Add scatterplot points
+#   geom_hline(yintercept = 0, col = "red") +  # Add horizontal reference line at y = 0
+#   labs(x = "Fitted Values", y = "Residuals",
+#        title = "Residuals vs. Fitted Values for Polynomial Model") 
+# 
+# # -------------------------------------------------------------------------
+# ######## TAKE CARE OF LEVERAGE POINTS
+# car::influencePlot(m.poly.P1211)
+# # high leverage point at row, 53
+# # large influence at rows, 5, 59
+# 
+# cooks.d = cooks.distance(m.poly.P1211)
+# # Plot Cook's Distance
+# plot(cooks.d, pch = 20, main = "Cook's Distance Plot", xlab = "Observation Index", ylab = "Cook's Distance")
+# abline(h = 4 / length(cooks.d), col = "red")  #threshold line
+# 
+# # Identify influential points
+# influence = which(cooks.d > 4 / length(cooks.d))
+# cat("Influential point(s) based on Cook's distance:", influence, "\n")
+# row.influence = names(influence)
+# outliers = numeric_df1_P1211[row.influence,]
+# numeric_df1_P1211_R = numeric_df1_P1211 %>% anti_join(outliers)
+# 
+# # -------------------------------------------------------------------------
+# ########### Try again without outliers
+# numeric_df1_P1211_R$Vol.Unit.Ratio.c = numeric_df1_P1211_R$Vol.Unit.Ratio - mean(numeric_df1_P1211_R$Vol.Unit.Ratio)
+# numeric_df1_P1211_R$Vol.Unit.Ratio.c.2 = numeric_df1_P1211_R$Vol.Unit.Ratio.c^2
+# 
+# m.poly.P1211 = lm(Mean.Intensity ~ Vol.Unit.Ratio.c + Vol.Unit.Ratio.c.2, data = numeric_df1_P1211_R)
+# par(mfrow=c(2,2))
+# plot(m.poly.P1211)
+# par(mfrow=c(1,1))
+# 
+# car::vif(m.poly.P1211)
+# 
+# cat("Adjusted R-squared:", summary(m.poly.P1211)$adj.r.squared, "\n") #!?
+# 
+# ggplot(data = numeric_df1_P1211_R, aes(x = Vol.Unit.Ratio.c, y = Mean.Intensity)) +
+#   geom_point() +  # Add scatterplot points
+#   geom_smooth(method = "lm", formula = y ~ poly(x, 2), col = "red") +  # Add polynomial regression fit
+#   labs(x = "Centered Vol.Unit.Ratio", y = "Mean.Intensity",
+#        title = "Polynomial Regression Fit of Mean.Intensity vs. Centered Vol.Unit.Ratio")
+# 
+# fitted_values = fitted(m.poly.P1211)
+# residuals = resid(m.poly.P1211)
+# residuals_df = data.frame(Fitted = fitted_values, Residuals = residuals)
+# 
+# ggplot(data = residuals_df, aes(x = Fitted, y = Residuals)) +
+#   geom_point() +  # Add scatterplot points
+#   geom_hline(yintercept = 0, col = "red") +  # Add horizontal reference line at y = 0
+#   labs(x = "Fitted Values", y = "Residuals",
+#        title = "Residuals vs. Fitted Values for Polynomial Model") 
 
 
 ```
