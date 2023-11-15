@@ -117,18 +117,23 @@ def calculate_structure_weight(structure):
                         weight += atomic_weights[element]
     return weight/1000.0
 
-def main(spacegroup):
-    # Get the current working directory
-    current_directory = os.getcwd()
+def calculate_structure_weight_everything(structure):
+    weight = 0.0
+    for model in structure:
+        for chain in model:
+                for atom in chain:
+                    element = atom.element
+                    if element in atomic_weights:
+                        weight += atomic_weights[element]
+    return weight/1000.0
 
-    # Construct the path to the target directory
+def main(spacegroup):
+    current_directory = os.getcwd()
     target_directory = os.path.join(current_directory, f"run_sfall/pdb/pdb_{spacegroup}")
 
-    # Check if the target directory exists
     if not os.path.exists(target_directory):
         print(f"Directory not found: {target_directory}")
         return
-    # Create empty lists to store results
     pdb_ids = []
     structure_weights = []
 
@@ -150,7 +155,7 @@ def main(spacegroup):
                 
                 pdb_ids.append(filename)
                 structure_weights.append(weight)
-
+                
                 # Print the results every 10th iteration
                 if len(pdb_ids) % 50 == 0:
                     print('... calculating structure weights ...', '\n')

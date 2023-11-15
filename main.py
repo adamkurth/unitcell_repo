@@ -120,16 +120,16 @@ def analyze_crystals(space_group):
     # Drop the duplicate 'PDB_ID' column
     intensity_df = intensity_df.loc[:, ~intensity_df.columns.duplicated()]
     # gives unitcell df with all unit cell attributes and intensity df with all intensity attributes
-    final_df = calculateVolume(unit_cell_df['alpha'], unit_cell_df['beta'], unit_cell_df['gamma'],unit_cell_df['a'], unit_cell_df['b'], unit_cell_df['c'], intensity_df)
-    # print("Before merge: \n", final_df)
-    #retrieves weights from weight.py
-    weights = wt.main(space_group)
-    weights['PDB_ID'] = weights['PDB_ID'].str.replace('.pdb', '', regex=False)
+    weights_df = wt.main(space_group)
+    weights_df['PDB_ID'] = weights_df['PDB_ID'].str.replace('.pdb', '', regex=False)
+
+    final_df = calculateVolume(unit_cell_df['alpha'], unit_cell_df['beta'], unit_cell_df['gamma'],unit_cell_df['a'], unit_cell_df['b'], unit_cell_df['c'], weights_df, intensity_df)
+
     #combine
-    final_df = pd.merge(final_df, weights, on='PDB_ID')
+    final_df = pd.merge(final_df, weights_df, on='PDB_ID')
 
     # Finally reorder columns
-    final_df = final_df[['PDB_ID', 'Spacegroup', 'Calculated Structure Weight (kDa)', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'UnitCellVolume', 'CrystalVolume', 'VolumeToUnitCellVolRatio', 'Mean Intensity', 'Max Intensity', 'Min Intensity', 'Max-Min Intensity Difference', 'Mean Phase', 'Max Phase', 'Min Phase', 'Max-Min Phase Difference']]
+    final_df = final_df[['PDB_ID', 'Spacegroup', 'Calculated Structure Weight (kDa)', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'UnitCellVolume', 'PackingDensity', 'Mean Intensity', 'Max Intensity', 'Min Intensity', 'Max-Min Intensity Difference', 'Mean Phase', 'Max Phase', 'Min Phase', 'Max-Min Phase Difference']]
     final_df, intensity, phase = [df.dropna() for df in [final_df, intensity, phase]]
     return final_df, intensity, phase
 
@@ -173,38 +173,14 @@ def extract_unit_cell_attributes(space_group):
     return unit_cell_attributes_df
 
 
-
-def calculateVolume(alpha, beta, gamma, a, b, c, df_in):
-    # Calculate unit cell volume (monoclinic)
-    unitcell_vol = a * b * c
+def calculateVolume(alpha, beta, gamma, a, b, c, weights_df, df_in):
     # Calculate the volume of the parallelepiped
-    crystal_vol = a * b * c * np.sqrt(1 - np.cos(np.deg2rad(alpha))**2 - np.cos(np.deg2rad(beta))**2 - np.cos(np.deg2rad(gamma))**2 + 2 * np.cos(np.deg2rad(alpha)) * np.cos(np.deg2rad(beta)) * np.cos(np.deg2rad(gamma)))
-    
+    unitcell_vol = a * b * c * np.sqrt(1 - np.cos(np.deg2rad(alpha))**2 - np.cos(np.deg2rad(beta))**2 - np.cos(np.deg2rad(gamma))**2 + 2 * np.cos(np.deg2rad(alpha)) * np.cos(np.deg2rad(beta)) * np.cos(np.deg2rad(gamma)))
+    structure_weight = weights_df['Calculated Structure Weight (kDa)']
     # Append the calculated values to the DataFrame
     df_in['UnitCellVolume'] = unitcell_vol
-    df_in['CrystalVolume'] = crystal_vol
-    df_in['VolumeToUnitCellVolRatio'] = crystal_vol / unitcell_vol
+    df_in['PackingDensity'] = structure_weight / unitcell_vol
     return df_in
-
-
-# def extract_unit_cell_attributes(space_group, pdb_files):
-#     # Create an empty list to store dictionaries of unit cell attributes
-#     unit_cell_attributes = []
-
-#     # Loop through each pdb file and calculate the atomic weight
-#     for pdb_file in pdb_files:
-#         atomic_weight = calculate_atomic_weight(pdb_file)
-
-#         # Append the calculated values to the list of unit cell attributes
-#         unit_cell_attributes.append({
-#             'SpaceGroup': space_group,
-#             'AtomicWeight': atomic_weight,
-#         })
-
-#     return unit_cell_attributes
-
-
-
 
 if __name__ == "__main__":
 
@@ -214,9 +190,6 @@ if __name__ == "__main__":
     # P 1 2 1
     # P 1 21 1
     # C 1 2 1
-    # P 1 21/c 1
-    # C 1 2/c 1
-    # # C 1 c 1
     
     ids_P121 = s.get_pdb_ids("P 1 2 1", "monoclinic", limit=100)
     ids_P1211 = s.get_pdb_ids("P 1 21 1", "monoclinic", limit=100)
@@ -238,21 +211,21 @@ if __name__ == "__main__":
     # weights in kDa (kilo Daltons)
     
     wd = os.getcwd()
-    P1211_df, P1211_intensities, P1211_phases = analyze_crystals("P1211")    
+    P1211_df, P1211_intensities, P1211_phases = analyze_crystals("P1211")
     # print('P1211 Intensity DF: \n', P1211_intensities)
     # print('P1211 Phase DF: \n', P1211_phases)
     print('P1211 Main DF: \n', P1211_df)  
-    # w.write(P1211_df, P1211_intensities, P1211_phases, 'P1211', wd)
+    w.write(P1211_df, P1211_intensities, P1211_phases, 'P1211', wd)
     P121_df, P121_intensities, P121_phases = analyze_crystals("P121")
     # print('P121 Intensity DF: \n', P121_intensities)
     # print('P121 Phase DF: \n', P121_phases)
-    # print('P121 Main DF: \n', P121_df)  
-    # w.write(P121_df, P121_intensities, P121_phases, 'P121', wd)
+    print('P121 Main DF: \n', P121_df)  
+    w.write(P121_df, P121_intensities, P121_phases, 'P121', wd)
     C121_df, C121_intensities, C121_phases  = analyze_crystals("C121")
     # print('C121 Intensity DF: \n', C121_intensities)
     # print('C121 Phase DF: \n', C121_phases)
-    # print('C121 Main DF: \n', C121_df)  
-    # w.write(C121_df, C121_intensities, C121_phases, 'C121', wd)
+    print('C121 Main DF: \n', C121_df)  
+    w.write(C121_df, C121_intensities, C121_phases, 'C121', wd)
 
     all_df1 = pd.concat([P1211_df, P121_df, C121_df])
     print('All DF: \n', all_df1)
@@ -261,16 +234,20 @@ if __name__ == "__main__":
     #     print(df.describe())
     #     print("\n")
     
-    d.cor_matrix(P1211_df)
-    d.cor_matrix(P121_df)
-    d.cor_matrix(C121_df)
+    # d.cor_matrix(P1211_df)
+    # d.cor_matrix(P121_df)
+    # d.cor_matrix(C121_df)
 
-    
+    """TO DO 11/15/23"""
+    # 1 .  mean intensity vs packing density
+    # 2. a specific hkl reflection intensity vs packing density 
+    # if these no regression then add water in the molecular weight and recaculate the packing density
+    # look again mean instensity or specific reflection
 
+    # plot the mean intensity vs packing density if it doesnt work then 
 
-
-
-    """"""
+    # look at hkl values for each spacegroup of specific reflection, then put in dataframe
+    ###########################
     # d.plot_hist(P1211_intensities)
     # d.plot_hist_phases(P1211_phases)
     
@@ -282,9 +259,9 @@ if __name__ == "__main__":
     
     # d.plot_boxplot(P1211_intensities)   
     
-    lm1 = p.linear_model(['VolumeToUnitCellVolRatio'], 'Mean Intensity', P1211_df, P1211_df)
-    lm2 = p.linear_model(['VolumeToUnitCellVolRatio', 'Calculated Structure Weight (kDa)'], 'Mean Intensity', P1211_df, P1211_df)
-    lm3 = p.linear_model(['Calculated Structure Weight (kDa)'], 'Mean Intensity', P1211_df, P1211_df)
+    # lm1 = p.linear_model(['VolumeToUnitCellVolRatio'], 'Mean Intensity', P1211_df, P1211_df)
+    # lm2 = p.linear_model(['VolumeToUnitCellVolRatio', 'Calculated Structure Weight (kDa)'], 'Mean Intensity', P1211_df, P1211_df)
+    # lm3 = p.linear_model(['Calculated Structure Weight (kDa)'], 'Mean Intensity', P1211_df, P1211_df)
     
     
     
@@ -309,4 +286,3 @@ if __name__ == "__main__":
     # conditition number is large, indicates stable model
     # lm = p.linear_model(['VolumeToUnitCellVolRatio'], 'Mean FP', results_df, results_df)
     # p.plot_residuals(lm, 'VolumeToUnitCellVolRatio', 'Mean FP', results_df, results_df)
-
