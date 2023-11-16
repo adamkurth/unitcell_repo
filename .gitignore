@@ -3,3 +3,4 @@
 *.mtz
 run_sfall/data/data_*
 run_sfall/out/out_*
+__pycache__/

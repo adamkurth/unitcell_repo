@@ -330,16 +330,21 @@ that can occur when making physical measurement [ and ] has to be solved
 for the determination of a structure from diffraction data."
 [@wikipedia_phase_problem].
 
-# Research Question:
+## What is the Structure Factor? 
 
-Let us see whether there is a linear dependence of X-ray diffraction
-intensities on the number of unit cells exposed to the X-rays. This
-further refines to the more specific, within the same space group, does
-the packing density have any affect on the diffracted intensity?
+$F(hkl) = \sum_{j}f_je^{(2\pi i(hx_j + ky_j + lz_j))}$
+
+We have calculated these values for all $hkl$ values using CCP4, a commonly used crystallography program. This calculation is key for interpreting the structure characteristics of the protein. By calculating the structure factor, we gain insight into information about the diffraction pattern.
+
+# Research Question:
+ 
+Let us see whether there is a linear dependence of X-ray diffraction intensities on the number of unit cells exposed to the X-rays. This further refines to the more specific, $ \textit{within the same space group, does the packing density have any affect on the diffracted intensity?}$
 
 # Data Exploration:
 
-```{r, message=FALSE, warning=FALSE}
+Two different ways to visualize the correlation among each numerical predcitor interested in testsing. 
+
+```{r, include=FALSE, message=FALSE, warning=FALSE}
 ## using ggplot for experimentation
 residuals_vs_fitted <- function(model) {
     ggplot(model, aes_string(x = ".fitted", y = ".resid")) +
@@ -390,7 +395,7 @@ ggpairs(numeric_df1_P1211, cardinality_threshold = 100)
 
 From the correlation matrices, its easy to see that as unit cell volume
 predictors increase, so does the structure weight. This also applies to
-the packing density since they are proportions of eachother. This makes
+the packing density since they are proportions of each other. This makes
 sense, and is not interesting. The question rather, is whether the mean
 intensity predictor correlated with anything, specifically the packing
 density. As you can see that the largest Pearson's correlation in the
@@ -414,7 +419,7 @@ distributions, resulting in lower intensity.
 
 $$ E\{\text{Mean.Intensity}\}_{P1211} = \beta_0 + \beta_1(\text{Calc.Structure.weight}) + \beta_2(\text{Packing.Density}) $$
 
-```{r, echo=T, include=T}
+```{r, echo=T}
 ########## MODEL for P1211 
 # -------------------------------------------------------------------------
 m.P1211 = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = df1_P1211)
@@ -438,13 +443,6 @@ b = ggplot(data = df1_P1211, aes(x = Packing.Density, y = Mean.Intensity)) +
        title = "Scatterplot of Mean.Intensity vs. Packing.Density")
 ggarrange(a,b)
 # This does not show linear relationship off the bat.
-# individually
-par(mfrow=c(2,2))
-assumption.1.check.linearity(m.P1211)
-assumption.2.check.outliers(m.P1211) # most definitely influence of outliers.
-assumption.3.check.homoskedasticity(m.P1211)
-assumption.4.check.normality(m.P1211)
-par(mfrow=c(1,1))
 ```
 
 ```{r}
@@ -456,41 +454,25 @@ par(mfrow=c(1,1))
 ```{r}
 assumption.5.check.independence(m.P1211)
 # Visualize outliers, leverage points, and influential points
+```
+
+```{r}
 car::influencePlot(m.P1211,id=list(labels=row.names(df1_P1211)))
 ```
 
-After checking the assumption, this model passes except for potentially
-having a few outliers. As indicated on the scale-location plot, and
-qqplot.
+After checking the assumptions of multiple regression, this model passes except for potentially having a few outliers. As indicated on the scale-location plot, and qqplot.
 
 # Assumption 5: Cook's Distance:
 
-Cook's Distance is a measure to estimate the influence of all the data
-points when using ordinary least squares in regression. This helps point
-out outliers with a strong influence on the data. Since the assumption 5
-check, used the `cooks.distance()` function, and gave an autocorrelation
-of $0.05725871$, this means that there's a low correlation between
-residuals. Thus, the residuals are independent.
+Cook's Distance is a measure to estimate the influence of all the data points in multiple regression. This helps point out outliers with a strong influence on the data. Since the assumption 5 check, used the `cooks.distance()` function, and gave an autocorrelation of $0.05725871$, this means that there's a low correlation between residuals. Thus, the residuals are independent.
 
-D-W Test Statistic: Autocorrelation is the measure usually used in time
-series data which detects whether there is any correlation between the
-series of values.
+D-W Test Statistic: Autocorrelation is the measure usually used in time series data which detects whether there is any correlation between the series of values.
 
-This test statistic tests that the null hypothesis has no
-autocorrelation among the residuals. With a range of 0 to 4 for this
-particular test statistic shows a value very close to 2. When 4 means
-that there is positive autocorrelation, and 0 indicates that there's
-negative autocorrelation. Thus, there's little to no autocorrelation
-among the residuals in this model, since they're independent.
+This test statistic tests that the null hypothesis has no autocorrelation among the residuals. With a range of 0 to 4 for this particular test statistic shows a value very close to 2. When 4 means that there is positive autocorrelation, and 0 indicates that there's negative autocorrelation. Thus, there's little to no autocorrelation among the residuals in this model, since they're independent.
 
-P-Value: Under the null hypothesis, the p-value states that there is no
-autocorrelation. With a p-value typically above $0.05$, we fail to
-reject the null hypothesis. This does not give enough evidence to reject
-the null hypothesis. With a p-value of $0.496$, this model indicates
-that there is strong statistical evidence of the contrary.
+P-Value: Under the null hypothesis, the p-value states that there is no autocorrelation. With a p-value typically above $0.05$, we fail to reject the null hypothesis. This does not give enough evidence to reject the null hypothesis. With a p-value of $0.496$, this model indicates that there is strong statistical evidence of the contrary.
 
-Influence Plot: As the influence plot shows, there is some high leverage
-points in this data.
+Influence Plot: As the influence plot shows, there is some high leverage points in this data.
 
 ```{r}
 assumption.6.check.multicollinearity(m.P1211)
@@ -498,14 +480,9 @@ assumption.6.check.multicollinearity(m.P1211)
 
 # Assumption 6: Multicolinearity
 
-With a VIF score of around 1, this suggests that there is very low
-multicolinearity in the model. We can proceed with this model that there
-are low correlation between the multiple independent variables in the
-model. Since these show VIF values of roughly around 1, these are
-perfectly colinear.
+With a VIF score of around 1, this suggests that there is very low multicolinearity in the model. We can proceed with this model that there are low correlation between the multiple independent variables in the model. Since these show VIF values of roughly around 1, these are perfectly colinear. 
 
-Proceeding to see whether removing high influence points, improves the
-model fit.
+Proceeding to see whether removing high influence points, improves the model fit.
 
 ```{r, warning=FALSE, message=FALSE}
 ########## Treating outliers.
@@ -547,6 +524,8 @@ r.a.2.reduced = summary(m.P1211.R)$adj.r.squared
 r.a.2.reduced - r.a.2
 # -------------------------------------------------------------------------
 ```
+
+## Confidence/Prediction Interval Plots
 
 ```{r, echo=T}
 par(mfrow=c(1,2))
@@ -607,8 +586,8 @@ summary(m.P1211.R)
 ```
 
 By reducing the data set for this space group, there's an observed
-negative slope. When the packing density increases by 1 unit, there's a
-corresponding decrease in the average number of counted photons by
+negative slope. When the packing density increases by 1-unit, there's a
+corresponding increase in the average number of counted photons by
 $260.3335$, holding all other predictors constant.
 
 The confidence interval plots, and summary show that the linear relation
@@ -625,9 +604,6 @@ other space groups should be investigated.
 ########## MODEL for P121
 # -------------------------------------------------------------------------
 m.P121 = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = df1_P121)
-par(mfrow=c(2,2))
-plot(m.P1211)
-par(mfrow=c(1,1))
 ########## Diagnostics
 # -------------------------------------------------------------------------
 # Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
@@ -645,13 +621,10 @@ b = ggplot(data = df1_P121, aes(x = Packing.Density, y = Mean.Intensity)) +
        title = "Scatterplot of Mean.Intensity vs. Packing.Density")
 ggarrange(a,b)
 # This does not show linear relationship off the bat.
-# individually
 par(mfrow=c(2,2))
-assumption.1.check.linearity(m.P121)
-assumption.2.check.outliers(m.P121) # most definitely influence of outliers.
-assumption.3.check.homoskedasticity(m.P121)
-assumption.4.check.normality(m.P121)
+plot(m.P1211)
 par(mfrow=c(1,1))
+
 assumption.5.check.independence(m.P121)
 # Visualize outliers, leverage points, and influential points
 car::influencePlot(m.P121,id=list(labels=row.names(df1_P121)))
@@ -746,9 +719,6 @@ confint(m.P121.R)
 ########## MODEL for C121 
 # -------------------------------------------------------------------------
 m.C121 = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = df1_C121)
-par(mfrow=c(2,2))
-plot(m.C121)
-par(mfrow=c(1,1))
 ########## Diagnostics
 # -------------------------------------------------------------------------
 # Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
@@ -768,10 +738,7 @@ ggarrange(a,b)
 # This does not show linear relationship off the bat.
 # individually
 par(mfrow=c(2,2))
-assumption.1.check.linearity(m.C121)
-assumption.2.check.outliers(m.C121) # most definitely influence of outliers.
-assumption.3.check.homoskedasticity(m.C121)
-assumption.4.check.normality(m.C121)
+plot(m.C121)
 par(mfrow=c(1,1))
 # Visualize outliers, leverage points, and influential points
 car::influencePlot(m.C121,id=list(labels=row.names(df1_C121)))
@@ -866,6 +833,10 @@ All of the steps for space group P1211 seem to hold for P121, and C121
 space groups. As seen from the plot below, there's not a lot of
 variation in the points of the three space groups. With P1211 having a
 `Spacegroup.ID` of 0, P121 that of 1, and C121 has 2.
+
+For ease of calculation, these space groups will be combined into one
+data frame, however this it's important to note that the group symmetry
+must be preserved when analyzing the nuances of each space group.
 
 ```{r, message=F,warning=F}
 plot(all_df1$Spacegroup.ID, all_df1$Mean.Intensity, data=all_df1) # does not look like significant difference among the spacegroups.
@@ -972,53 +943,6 @@ par(mfrow=c(1,1))
 confint(model.all)
 ```
 
-```{r, warning=F, message=F}
-# Since the mean intensity does not seem to change for the given spacegroups...
-model.all = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = all_df1.reduced)
-par(mfrow=c(2,2))
-plot(m.C121)
-par(mfrow=c(1,1))
-summary(model.all)
-car::influencePlot(model.all)
-########## Diagnostics
-# -------------------------------------------------------------------------
-# Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
-ggplot(data = all_df1, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
-  geom_point() +
-  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-  labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
-       title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
-# -------------------------------------------------------------------------
-########## Any improvement to the model?
-model.all.R = lm(Mean.Intensity ~ Calc.Structure.weight, data = all_df1.reduced)
-par(mfrow=c(2,2))
-plot(model.all.R)
-par(mfrow=c(1,1))
-summary(model.all.R)
-car::influencePlot(model.all.R)
-# -------------------------------------------------------------------------
-# For Confidence Interval
-# Calculate custom y-axis limits for the first plot
-
-conf.int.1 <- predict(model.all.reduced, newdata = x_new, interval = "confidence")
-pred.int.1 <- predict(model.all.reduced, newdata = x_new, interval = "prediction")
-
-y_limits_1 <- range(pred.int.1[, c("lwr", "upr")])
-
-# Plot the confidence interval
-plot(x_new$Calc.Structure.weight, conf.int.1[, "fit"], type = "l", col = "blue", 
-     ylim = y_limits_1, 
-     ylab = "Mean Intensity", xlab = "Calc Structure Weight")
-lines(x_new$Calc.Structure.weight, conf.int.1[, "lwr"], col = "red", lty = 2)
-lines(x_new$Calc.Structure.weight, conf.int.1[, "upr"], col = "red", lty = 2)
-
-lines(x_new$Calc.Structure.weight, pred.int.1[, "lwr"], col = "orange", lty = 2)
-lines(x_new$Calc.Structure.weight, pred.int.1[, "upr"], col = "orange", lty = 2)
-# -------------------------------------------------------------------------
-# Reset the plotting environment to one plot
-par(mfrow=c(1,1))
-```
-
 # Hypothesis Test:
 
 Testing whether the the reduced linear model provides a better fit.
@@ -1026,11 +950,13 @@ Going to use $\alpha = 0.05$ as the significance value.
 
 1.  Assumptions: $\varepsilon \overset{iid}{\sim} N(0,1)$
 
-Alternatives: Define Models: $Y$ as `Mean.Intensity`. $X_1$ as
-`Calc.Structure.weight`. $X_2$ as `Packing.Density`.
+- Alternatives: 
+  -- Define Models: $Y$ as `Mean.Intensity`. 
+  -- $X_1$ as `Calc.Structure.weight`.  
+  -- $X_2$ as `Packing.Density`.
 
-$E\{Y\}_{\text{reduced.model}} = \beta_0 + \beta_1X_1$
-$E\{Y\}_{\text{full.model}} = \beta_0 + \beta_1X_1 + \beta_2X_2$
+$$E\{Y\}_{\text{reduced.model}} = \beta_0 + \beta_1X_1$$
+$$E\{Y\}_{\text{full.model}} = \beta_0 + \beta_1X_1 + \beta_2X_2$$
 
 2.  Hypotheses: $$H_0: \beta_{2} = 0$$ $$H_1: \beta_{2} \neq 0$$
     Decision Rule:
@@ -1039,7 +965,11 @@ $E\{Y\}_{\text{full.model}} = \beta_0 + \beta_1X_1 + \beta_2X_2$
 3.  Test Statistic:
 
 ```{r}
-anova.table = anova(model.all, model.all.R)
+model.all.F = model.all.reduced
+model.all.R = lm(Mean.Intensity ~ Calc.Structure.weight, data=all_df1.reduced)
+# model.all.reduced = all_df1.reduced dataframe without outliers
+# model.all.R  = dropped PackingDensity all_df1.reduced dataframe without outliers 
+anova.table = anova(model.all.F, model.all.R)
 anova.table
 F.crit = anova.table[2,5]
 ```
@@ -1052,25 +982,30 @@ pval = anova.table[2,6]
 pval < alpha
 ```
 
-5.  Conclusion: Since the $p_{\text{value}}$ is less than the specified
-    significance value ($\alpha = 0.05$) by the specified decision rule,
-    we have sufficient evidence to reject the null hypothesis. There is
-    a significant effect on the calculated structure weight (in kilo
-    Daltons) and the mean intensity (number of photons). Therefore, the
-    calculated structure weight contributes meaningfully to the
-    variations of the mean intensity.
+5.  Conclusion: Since the $p_{\text{value}}$ is less than the specified significance value ($\alpha = 0.05$) by the specified decision rule, we have sufficient evidence to reject the null hypothesis. There is a significant effect on the calculated structure weight (in kiloDaltons) and the mean intensity (number of photons). Therefore, the calculated structure weight contributes meaningfully to the variations of the mean intensity.
 
-Warranting further investigation, this result suggests that the
-$\textit{true}$ structure weight also has a significant effect on the
-$\text{observed}$, $\textit{experimental}$ intensity values.
+Warranting further investigation, this result suggests that the $\textit{true}$ structure weight also has a significant effect on the $\text{observed}$, $\textit{experimental}$ intensity values.
 
-## Another Approach:
+## Another Approach: Potential Predictors:
 
 Let us introduce more context for the next approach:
 
--   `h,k,l`: Also called Miller indices, are the orientation of the
-    crystal lattice planes in three-dimensional reciprocal space. This
-    means,
+-   `h,k,l`: Also called Miller indices, are the orientation of the crystal lattice planes in three-dimensional reciprocal space. Depending on the notation, this can refer to a plane, point, or vector. For the sake of simplicity, this refers to a point in reciprocal space.
+
+- `Common.Reflection.Max.Intensity` : Besides the motivation behind this predictor, this predictor gives a common maximum reflection across all of the structure factor files. This predictor was created to give a level of stability and consistency, this also provides information to a significant structure feature which is present in all of the crystals being analyzed.
+
+
+# Research Question:
+
+Let us observe whether there is a linear dependence among the maximum intensity that is common to all structure factor files, and the packing density of the unit cell in question. This will give insights on how protein crystals are related to their outputted intensity values depending on their packing densities. Said another way, if we know the packing density of a specific unit cell under experimentation, we can infer about the maximum diffraction intensity output such that this maximum is common to all the crystals.
+
+## Motivation
+
+Instead of analyzing the `Mean.Intensity` as before, we will pick the maximum common reflection intensity value and point, in all of the structure factor files (`.hkl`), and append these to a data frame. Hence, for all of the `h,k,l` coordinates, the same point in reciprocal space is chosen to analyze the hypothesized relation to the packing density. These coordinates and their max common intensity value were found from the Python script, for each space group is: 
+
+- P1211 : Maximum common intensity: 7429.6, HKL index: (6, 1, 2)
+- P121 : Maximum common intensity: 11019.7, HKL index: (2, -7, 0)
+- C121 : Maximum common intensity: 9892.4, HKL index: (2, 0, 11)
 
 ```{r}
 P1211 = read.table("../P1211_output/P1211_new_approach_crystal_df.txt", header = TRUE, fill = TRUE)
@@ -1083,7 +1018,7 @@ new_colnames = c('',
                'a', 'b', 'c',
                'alpha', 'beta', 'gamma', 
                'h', 'k', 'l',
-               'Reflection.Max.Intensity.Value',
+               'Common.Reflection.Max.Intensity',
                'UnitCellVolume', 
                'Packing.Density',
                'Mean.Intensity', 
@@ -1103,7 +1038,6 @@ C121 = C121[, -1]
 P1211 = P1211[, sapply(P1211, function(col) !all(is.na(col)))]
 P121 = P121[, sapply(P121, function(col) !all(is.na(col)))]
 C121 = C121[, sapply(C121, function(col) !all(is.na(col)))]
-
 all_df = rbind(P1211,P121,C121)
 ```
 
@@ -1111,7 +1045,7 @@ all_df = rbind(P1211,P121,C121)
 
 ```{r, message=FALSE, warning=FALSE}
 keep = c('Calculated.Structure.Weight',
- 'Reflection.Max.Intensity.Value',
+ 'Common.Reflection.Max.Intensity',
  'UnitCellVolume', 
  'Packing.Density',
  'Mean.Intensity')
@@ -1120,365 +1054,151 @@ ggpairs(numeric,cardinality_threshold = 100)
 pairs(numeric)
 ```
 
-It seems that from the pairs plot, that the max reflection predictor (`Reflection.Max.Intensty`) from first glance have a negative curvilinear relationship. This looks inversely proportional, much like the structure weight and packing density relationship, which we know is since $\text{Packing.Density} = \frac{\text{Calc.Structure.Weight}*1000}{\text{Unit.Cell.Volume}} =\frac{\text{g/mol}}{Å^3}$. This is interesting since the max of the intensity values in the `.hkl` files was taken, then for every `.pdb` file the same row was taken and outputted into this data frame.
+It seems that from the pairs plot, that the max reflection predictor (`Common.Reflection.Max.Intensity`) from first glance have a negative linear relationship. This is interesting since we have taken the maximum reflection which is common to all calculated structure factor 
+
+Recall, that the packing density is related by the following equation $\text{Packing.Density} = \frac{\text{Calc.Structure.Weight}*1000}{\text{Unit.Cell.Volume}} =\frac{\text{g/mol}}{Å^3}$. We will not consider this as a significant predictor.
 
 ```{r}
-Packing.Density.2 = Packing.Density^2
-m.poly = lm(Reflection.Max.Intensity.Value ~ Packing.Density + Packing.Density.2, data=P1211)
-ggplot(data = P1211, aes(x = Packing.Density, y = Reflection.Max.Intensity.Value)) +
+# exploring
+plot(P1211$Packing.Density, P1211$Common.Reflection.Max.Intensity)
+abline(lm(Common.Reflection.Max.Intensity ~ Packing.Density, data=P1211), col="red")
+car::influencePlot(lm(Common.Reflection.Max.Intensity ~ Packing.Density, data=P1211))
+```
+
+
+```{r}
+m = lm(Common.Reflection.Max.Intensity ~ Packing.Density, data=P1211)
+m.all = lm(Common.Reflection.Max.Intensity ~ Packing.Density, data=all_df)
+# summary(m)
+# summary(m.all)
+cat('Adjusted R^2 of only P1211 data', summary(m)$adj.r.squared)
+cat('Adjusted R^2 of ALL data', summary(m.all)$adj.r.squared)
+```
+
+If we jump to conclusions, we see that the $P1211: R_a^2 = 0.1355912$ and  $All: R_a^2 = 0.00547536$. Thus the variation explained by the model decreases by $0.00547536 - 0.1355912 = -0.1301158$. We loose valiable information when ignoring the differentiation of the space group symmetry.
+
+## Model: 
+
+For all space groups, the model will take the following form, denoted in the code as `m1,m2,m3`.
+
+$$E\{\text{Common.Reflection.Max.Intensity}\} =\beta_0 + \beta_1(\text{Packing.Density})$$
+
+```{r}
+m1 = lm(Common.Reflection.Max.Intensity ~ Packing.Density, data=P1211)
+m2 = lm(Common.Reflection.Max.Intensity ~ Packing.Density, data=P121)
+m3 = lm(Common.Reflection.Max.Intensity ~ Packing.Density, data=C121)
+################
+a = ggplot(data = P1211, aes(x = Packing.Density, y = Common.Reflection.Max.Intensity)) +
   geom_point() +
-  geom_smooth(method = "lm", formula = y ~ poly(x, 2), col = "red") +
-  labs(x = "Packing.Density", y = "Reflection.Max.Intensity.Value", 
- title = "Scatterplot of Packing.Density vs. Reflection.Max.Intensity.Value")
-```
-
-```{r}
-car::influencePlot(m.poly)
-```
-
-Removing the high influence points here did not change the 
-
-```{r, message=FALSE, warning=FALSE}
-########## Treating outliers.
-cooks.d = cooks.distance(m.poly)
-influence = cooks.d[(cooks.d > (3*mean(cooks.d, na.rm = T)))]
-influence # see that most of the rows stated above are in this list
-row.influence = names(influence)
-outliers = P1211[row.influence,]
-P1211.reduced = P1211 %>% anti_join(outliers)
-P1211.reduced$Packing.Density.2 = P1211.reduced$Packing.Density^2
-m.poly.reduced = lm(Reflection.Max.Intensity.Value ~ Packing.Density +
-Packing.Density.2, data=P1211.reduced)
-car::influencePlot(m.poly.reduced)
-```
-## Model
-
-$$ E\{\text{Reflection.Max.Intensity.Value}\}_{P1211} = \beta_0 + \beta_{1}(\text{Packing.Density}) + \beta_{11}(\text{Packing.Density})^2$$
-Here we define the polynomial model where the added $\beta_{11}$ coefficient was added from the assumption that this was a 
-
-```{r}
-ggplot(data = P1211.reduced, aes(x = Packing.Density, y = Reflection.Max.Intensity.Value)) +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Packing.Density", y = "Common.Reflection.Max.Intensity", 
+       title = "m1 (P1211)")
+b = ggplot(data = P121, aes(x = Packing.Density, y = Common.Reflection.Max.Intensity)) +
   geom_point() +
-  geom_smooth(method = "lm", formula = y ~ poly(x, 2), col = "red") +
-  labs(x = "Packing.Density", y = "Reflection.Max.Intensity.Value", 
-       title = "Scatterplot of Packing.Density vs. Reflection.Max.Intensity.Value")
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Packing.Density", y = "Common.Reflection.Max.Intensity", 
+       title = "m2 (P121)")
+c = ggplot(data = C121, aes(x = Packing.Density, y = Common.Reflection.Max.Intensity)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
+  labs(x = "Packing.Density", y = "Common.Reflection.Max.Intensity", 
+       title = "m3 (C121)")
+ggarrange(a,b,c,ncol = 3,nrow = 1)
+###############
+par(mfrow=c(1,3))
+influencePlot(m1)
+influencePlot(m2)
+influencePlot(m3)
+par(mfrow=c(1,1))
+##############
+m = lm(Common.Reflection.Max.Intensity ~ Packing.Density + Spacegroup, data = all_df)
+summary(m)
+```
+
+From the influence plots, it's not worth removing the influence plots since there are at most 2 per space group. Also explored the variation of adding space group as a categorical variable, however this only worsens the model's fit. Thus, we will explore the space group data separately. There seems to be a discrepancy among each space group. 
+
+# Confidence and Prediction Interval Plots:
+
+```{r}
+######### Confidence/prediction intervals
+par(mfrow=c(1,3))
+# Calculate mean and range for Packing.Density
+packing_density_mean <- mean(P1211$Packing.Density, na.rm = TRUE)
+packing_density_range <- seq(from = min(P1211$Packing.Density, na.rm = TRUE), 
+                             to = max(P1211$Packing.Density, na.rm = TRUE), length.out = 100)
+
+# Create new data for predictions
+x_new <- data.frame(Packing.Density = packing_density_range)
+
+# Model m1
+conf.int.m1 <- predict(m1, newdata = x_new, interval = "confidence")
+pred.int.m1 <- predict(m1, newdata = x_new, interval = "prediction")
+
+# Custom y-axis limits for m1 plot
+y_limits_m1 <- range(c(conf.int.m1[, "lwr"], conf.int.m1[, "upr"], 
+                       pred.int.m1[, "lwr"], pred.int.m1[, "upr"]))
+
+# Plot m1
+plot(x_new$Packing.Density, conf.int.m1[, "fit"], type = "l", col = "blue", 
+     ylim = y_limits_m1, 
+     ylab = "Common Reflection Max Intensity", xlab = "Packing Density")
+lines(x_new$Packing.Density, conf.int.m1[, "lwr"], col = "red", lty = 2)
+lines(x_new$Packing.Density, conf.int.m1[, "upr"], col = "red", lty = 2)
+lines(x_new$Packing.Density, pred.int.m1[, "lwr"], col = "orange", lty = 2)
+lines(x_new$Packing.Density, pred.int.m1[, "upr"], col = "orange", lty = 2)
+######
+# Model m2
+conf.int.m2 <- predict(m2, newdata = x_new, interval = "confidence")
+pred.int.m2 <- predict(m2, newdata = x_new, interval = "prediction")
+
+# Custom y-axis limits for m1 plot
+y_limits_m2 <- range(c(conf.int.m1[, "lwr"], conf.int.m2[, "upr"], 
+                       pred.int.m1[, "lwr"], pred.int.m2[, "upr"]))
+
+# Plot m1
+plot(x_new$Packing.Density, conf.int.m2[, "fit"], type = "l", col = "blue", 
+     ylim = y_limits_m1, 
+     ylab = "Common Reflection Max Intensity", xlab = "Packing Density")
+lines(x_new$Packing.Density, conf.int.m2[, "lwr"], col = "red", lty = 2)
+lines(x_new$Packing.Density, conf.int.m2[, "upr"], col = "red", lty = 2)
+lines(x_new$Packing.Density, pred.int.m2[, "lwr"], col = "orange", lty = 2)
+lines(x_new$Packing.Density, pred.int.m2[, "upr"], col = "orange", lty = 2)
+######
+# Model m3
+conf.int.m3 <- predict(m3, newdata = x_new, interval = "confidence")
+pred.int.m3 <- predict(m3, newdata = x_new, interval = "prediction")
+
+# Custom y-axis limits for m1 plot
+y_limits_m3 <- range(c(conf.int.m3[, "lwr"], conf.int.m3[, "upr"], 
+                       pred.int.m3[, "lwr"], pred.int.m3[, "upr"]))
+
+# Plot m1
+plot(x_new$Packing.Density, conf.int.m3[, "fit"], type = "l", col = "blue", 
+     ylim = y_limits_m1, 
+     ylab = "Common Reflection Max Intensity", xlab = "Packing Density")
+lines(x_new$Packing.Density, conf.int.m3[, "lwr"], col = "red", lty = 2)
+lines(x_new$Packing.Density, conf.int.m3[, "upr"], col = "red", lty = 2)
+lines(x_new$Packing.Density, pred.int.m3[, "lwr"], col = "orange", lty = 2)
+lines(x_new$Packing.Density, pred.int.m3[, "upr"], col = "orange", lty = 2)
+par(mfrow=c(1,1))
 ```
 
 ```{r}
+confint(m1, level = 0.95)
+confint(m2, level = 0.95)
+confint(m3, level = 0.95)
 ```
 
-```{r,warning=FALSE, message=FALSE}
+## Interpretation: 
 
-```
+- `m1`: 
+  -- Of the first space group data (P1211), for every 1-unit increase in the packing density for the 100 sample proteins, the corresponding common reflection max intensity value decreases by a value of $-7148.1$, when holding all other predictors constant. Where the model explained $R_{P1211}^2 = 0.1443$ of the total variation in the data.
+  -- With 95% confidence, we observe that the true expected packing density for P1211 space group lies within (-10637.132, -3659.020). Notice that for this data, 0 is not included within the interval which gives us strong evidence to suggest that the true relation to the common max intensity has an inverse relationship with the packing density. 
 
-```{r}
-Packing.Density.2 = Packing.Density^2
-m.poly = lm(Reflection.Max.Intensity.Value ~ Packing.Density + Packing.Density.2, data=P1211)
-summary(m.poly)
-plot(Packing.Density, Reflection.Max.Intensity.Value, data=P1211)
+- `m2`: 
+  --The second spacegroup (P121), for every 1-unit increase in the packing density for the 100 sample proteins, the corresponding common reflection max intensity value decreases by a value of $-227.1$, when holding all other predictors constant. Where the model explained $R_{C121}^2 = 0.003716$ of the total variation in the data.
+  -- With 95% confidence, we observe that the true expected packing density for P121 lies within (-972.5347, 518.3331). Notice that for this data, 0 is included within the interval which gives us strong evidence to suggest that the true relation to the common max intensity for this space group does not have the same inverse relationship with the packing density. 
 
-car::influencePlot(m.poly)
-
-
-
-abline(m.poly)
-summary(m.poly)
-
-plot(lm(Reflection.Max.Intensity.Value ~ Packing.Density, data=P1211))
-
-     
-plot(Packing.Density, Reflection.Max.Intensity.Value, data=P1211)
-
-plot(Calculated.Structure.Weight, Reflection.Max.Intensity.Value, data=P1211)
-
-plot(Calculated.Structure.Weight, Reflection.Max.Intensity.Value, data=P1211)
-
-
-
-
-
-
-```
-
-```{r}
-# Calculate the mean of Reflection.Max.Intensity.Value
-reflection_mean <- mean(P1211$Reflection.Max.Intensity.Value)
-
-# Define a sequence of Packing.Density values
-density_range <- seq(min(P1211$Packing.Density), max(P1211$Packing.Density), length.out = 100)
-
-# Create a data frame with the sequence of Packing.Density values
-x_new <- data.frame(Packing.Density = density_range)
-
-# Predict the mean and confidence interval using your polynomial regression model
-conf.int <- predict(m.poly, newdata = x_new, interval = "confidence")
-
-# Calculate average bounds of the confidence interval
-avg_lower_bound <- rowMeans(conf.int[, c("lwr", "fit")])
-avg_upper_bound <- rowMeans(conf.int[, c("upr", "fit")])
-
-# Create a data frame for plotting
-plot_data <- data.frame(
-  Packing.Density = x_new$Packing.Density,
-  Mean_Reflection_Intensity = conf.int[, "fit"],
-  Lower_CI = conf.int[, "lwr"],
-  Upper_CI = conf.int[, "upr"],
-  Avg_Lower_CI = avg_lower_bound,
-  Avg_Upper_CI = avg_upper_bound
-)
-ggplot(plot_data, aes(x = Packing.Density)) +
-  geom_line(aes(y = Mean_Reflection_Intensity), color = "blue") +
-  geom_ribbon(aes(ymin = Lower_CI, ymax = Upper_CI), fill = "blue", alpha = 0.3) +
-  geom_line(aes(y = Avg_Lower_CI), color = "red", linetype = "dashed") +
-  geom_line(aes(y = Avg_Upper_CI), color = "red", linetype = "dashed") +
-  labs(
-    x = "Packing Density",
-    y = "Mean Reflection Intensity",
-    title = "Smooth Confidence Interval Plot with Average Bounds"
-  ) +
-  theme_minimal()
-
-```
-
-```{r}
-# every crystal in df2_all corresponds to the unique intensity values. Which we want to try and model.
-# # We retrieve the top 90th percentile of all of the rows (of the same crystal), and computes the mean value which is greater or equal to that percentile.
-# mean.top10 = apply(all_df2[, 3:ncol(all_df2)], MARGIN = 1, FUN = function(x) {
-#   non_missing_values = x[!is.na(x)] # Remove NAs
-#   if (length(non_missing_values) > 0) {
-#     mean(non_missing_values[non_missing_values >= quantile(non_missing_values, probs = 0.9, na.rm = TRUE)])
-#   } else {
-#     NA # Handle rows with no non-missing values
-#   }
-# })
-# 
-# #align the mean.top10 and the Packing.Density by selecting all of the 299 rows of df1_P1211$Packing.Density to match the length of mean.top10, and creates a new df of the vectors.
-# aligned_df = data.frame(mean.top10, Packing.Density = df1_P1211$Packing.Density[1:299])
-# aligned_df = aligned_df[!is.na(df1_P1211$Packing.Density), ]
-# aligned_df
-# 
-# m.percentile.P1211 = lm(mean.top10 ~ Packing.Density, data = aligned_df)
-# par(mfrow = c(2, 2))
-# plot(m.percentile.P1211)
-# par(mfrow = c(1, 1))
-# 
-# # -------------------------------------------------------------------------
-# # Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
-# ggplot(data = aligned_df, aes(x = mean.top10, y = Packing.Density)) +
-#   geom_point() +
-#   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-#   labs(x = "mean.top10", y = "Packing.Density", 
-#        title = "Scatterplot of mean.top10 vs. Packing.Density")
-# 
-# fitted = fitted(m)
-# residuals = residuals(m)
-# residuals.df = data.frame(fitted, residuals)
-# 
-# ggplot(data = residuals.df, aes(x = fitted, y = residuals)) + 
-#   geom_point() +
-#  geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-#   labs(x = "fitted", y = "residuals", 
-#        title = "fitted vs. residuals")
-# # -------------------------------------------------------------------------
-
-```
-
-```{r, warning=FALSE, message=FALSE}
-# ########## Treating outliers.
-# # -------------------------------------------------------------------------
-# cooks.d = cooks.distance(m.P1211)
-# max(cooks.d)
-# min(cooks.d)
-# 3*mean(cooks.d)
-# influence = cooks.d[(cooks.d > (3*mean(cooks.d, na.rm = T)))]
-# influence # see that most of the rows stated above are in this list
-# row.influence = names(influence)
-# outliers = df1_P1211[row.influence,]
-# df1_P1211.reduced = df1_P1211 %>% anti_join(outliers)
-# 
-# m.P1211.R = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = df1_P1211.reduced)
-# vif(m.P1211.R) # even lower but barely
-# # -------------------------------------------------------------------------
-# # Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
-# a = ggplot(data = df1_P1211.reduced, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
-#   geom_point() +
-#   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-#   labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
-#        title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
-# 
-# # Scatterplot of Packing.Density vs. Mean.Intensity with regression line
-# b = ggplot(data = df1_P1211.reduced, aes(x = Packing.Density, y = Mean.Intensity)) +
-#   geom_point() +
-#   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-#   labs(x = "Packing.Density", y = "Mean.Intensity", 
-#        title = "Scatterplot of Mean.Intensity vs. Packing.Density")
-# ggarrange(a,b, nrow =2)
-# # -------------------------------------------------------------------------
-# car::influencePlot(m.P1211.R,id=list(labels=row.names(df1_P1211.reduced))) # did not help much
-# plot(all_df1$Spacegroup.ID, all_df1$Mean.Intensity, data=all_df1) # does not look like significant difference among the spacegroups.
-#  
-
-
-
-
-
-
-# cooks.d = cooks.distance(m.P1211.R)
-# max(cooks.d)
-# min(cooks.d)
-# 3*mean(cooks.d)
-# influence = cooks.d[(cooks.d > (3*mean(cooks.d, na.rm = T)))]
-# influence # see that most of the rows stated above are in this list
-# row.influence = names(influence)
-# outliers = df1_P1211.reduced[row.influence,]
-# df1_P1211.reduced = df1_P1211.reduced %>% anti_join(outliers)
-# 
-# m.P1211.R = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = df1_P1211.reduced)
-# 
-# # -------------------------------------------------------------------------
-# 
-# cat("Adjusted R-squared of reduced model: ", summary(m.P1211.R)$adj.r.squared, "\n")
-# 
-# # -------------------------------------------------------------------------
-# ggplot(data = df1_P1211.reduced, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
-#   geom_point() +
-#   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-#   labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
-#        title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
-# 
-# # Scatterplot of Packing.Density vs. Mean.Intensity with regression line
-# ggplot(data = df1_P1211.reduced, aes(x = Packing.Density, y = Mean.Intensity)) +
-#   geom_point() +
-#   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-#   labs(x = "Packing.Density", y = "Mean.Intensity", 
-#        title = "Scatterplot of Mean.Intensity vs. Packing.Density")
-# 
-# car::influencePlot(m.P1211.R,id=list(labels=row.names(df1_P1211.reduced)))
-
-
-# -------------------------------------------------------------------------
-
-```
-
-## Advanced Diagnostics
-
-# Assumption 5: Cook's Distance:
-
-Cook's Distance is a measure to estimate the influence of all the data
-points when using ordinary least squares in regression. This helps point
-out outliers with a strong influence on the data. Since the assumption 5
-check, used the `cooks.distance()` function, and gave an autocorrelation
-of $0.05725871$, this means that there's a low correlation between
-residuals. Thus, the residuals are independent.
-
-D-W Test Statistic: This test statistic tests that the null hypothesis
-has no autocorrelation among the residuals. With a range of 0 to 4 for
-this particular test statistic shows a value very close to 2. When 4
-means that there is positive autocorrelation, and 0 indicates that
-there's negative autocorrelation. Thus, there's little to no
-autocorrelation among the residuals in this model.
-
-P-Value: Under the null hypothesis, the p-value states that there is no
-autocorrelation. With a p-value typically above $0.05$, we fail to
-reject the null hypothesis. This does not give enough evidence to reject
-the null hypothesis. With a p-value of $0.542$, this model indicates
-that there is not enough statistical evidence to conclude that the
-residuals are correlated.
-
-Influence Plot:
-
-# Assumption 6: Multicolinearity
-
-With a VIF score of around 1, this suggests that there is very low
-multicolinearity in the model. We can proceed with this model that there
-are low correlation between the multiple independent variables in the
-model. Since these show VIF values of roughly around 1, these are
-perfectly colinear.
-
-```{r,message=FALSE, warning=FALSE}
-# 
-# # trying
-# 
-# ########## CURVILINEAR MODELS 
-# # -------------------------------------------------------------------------
-# ggpairs(numeric_df1_P1211, cardinality_threshold = 100)
-# 
-# # centering 
-# numeric_df1_P1211$Packing.Density.c = numeric_df1_P1211$Packing.Density - mean(numeric_df1_P1211$Packing.Density)
-# numeric_df1_P1211$Packing.Density.c.2 = numeric_df1_P1211$Packing.Density.c^2
-# 
-# m.poly.P1211 = lm(Mean.Intensity ~ Packing.Density.c + Packing.Density.c.2, data = numeric_df1_P1211)
-# par(mfrow=c(2,2))
-# plot(m.poly.P1211)
-# par(mfrow=c(1,1))
-# 
-# car::vif(m.poly.P1211)
-# 
-# cat("Adjusted R-squared:", summary(m.poly.P1211)$adj.r.squared, "\n") #!?
-# 
-# ggplot(data = numeric_df1_P1211, aes(x = Packing.Density.c, y = Mean.Intensity)) +
-#   geom_point() +  # Add scatterplot points
-#   geom_smooth(method = "lm", formula = y ~ poly(x, 2), col = "red") +  # Add polynomial regression fit
-#   labs(x = "Centered Packing.Density", y = "Mean.Intensity",
-#        title = "Polynomial Regression Fit of Mean.Intensity vs. Centered Packing.Density")
-# 
-# fitted_values = fitted(m.poly.P1211)
-# residuals = resid(m.poly.P1211)
-# residuals_df = data.frame(Fitted = fitted_values, Residuals = residuals)
-# 
-# ggplot(data = residuals_df, aes(x = Fitted, y = Residuals)) +
-#   geom_point() +  # Add scatterplot points
-#   geom_hline(yintercept = 0, col = "red") +  # Add horizontal reference line at y = 0
-#   labs(x = "Fitted Values", y = "Residuals",
-#        title = "Residuals vs. Fitted Values for Polynomial Model") 
-# 
-# # -------------------------------------------------------------------------
-# ######## TAKE CARE OF LEVERAGE POINTS
-# car::influencePlot(m.poly.P1211)
-# # high leverage point at row, 53
-# # large influence at rows, 5, 59
-# 
-# cooks.d = cooks.distance(m.poly.P1211)
-# # Plot Cook's Distance
-# plot(cooks.d, pch = 20, main = "Cook's Distance Plot", xlab = "Observation Index", ylab = "Cook's Distance")
-# abline(h = 4 / length(cooks.d), col = "red")  #threshold line
-# 
-# # Identify influential points
-# influence = which(cooks.d > 4 / length(cooks.d))
-# cat("Influential point(s) based on Cook's distance:", influence, "\n")
-# row.influence = names(influence)
-# outliers = numeric_df1_P1211[row.influence,]
-# numeric_df1_P1211_R = numeric_df1_P1211 %>% anti_join(outliers)
-# 
-# # -------------------------------------------------------------------------
-# ########### Try again without outliers
-# numeric_df1_P1211_R$Packing.Density.c = numeric_df1_P1211_R$Packing.Density - mean(numeric_df1_P1211_R$Packing.Density)
-# numeric_df1_P1211_R$Packing.Density.c.2 = numeric_df1_P1211_R$Packing.Density.c^2
-# 
-# m.poly.P1211 = lm(Mean.Intensity ~ Packing.Density.c + Packing.Density.c.2, data = numeric_df1_P1211_R)
-# par(mfrow=c(2,2))
-# plot(m.poly.P1211)
-# par(mfrow=c(1,1))
-# 
-# car::vif(m.poly.P1211)
-# 
-# cat("Adjusted R-squared:", summary(m.poly.P1211)$adj.r.squared, "\n") #!?
-# 
-# ggplot(data = numeric_df1_P1211_R, aes(x = Packing.Density.c, y = Mean.Intensity)) +
-#   geom_point() +  # Add scatterplot points
-#   geom_smooth(method = "lm", formula = y ~ poly(x, 2), col = "red") +  # Add polynomial regression fit
-#   labs(x = "Centered Packing.Density", y = "Mean.Intensity",
-#        title = "Polynomial Regression Fit of Mean.Intensity vs. Centered Packing.Density")
-# 
-# fitted_values = fitted(m.poly.P1211)
-# residuals = resid(m.poly.P1211)
-# residuals_df = data.frame(Fitted = fitted_values, Residuals = residuals)
-# 
-# ggplot(data = residuals_df, aes(x = Fitted, y = Residuals)) +
-#   geom_point() +  # Add scatterplot points
-#   geom_hline(yintercept = 0, col = "red") +  # Add horizontal reference line at y = 0
-#   labs(x = "Fitted Values", y = "Residuals",
-#        title = "Residuals vs. Fitted Values for Polynomial Model") 
-
-
-```
+-`m3`: 
+  --Finally, third spacegroup (C121), for every 1-unit increase in the packing density for the 100 sample proteins, the corresponding common reflection max intensity value decreases by a value of $-20473.9$, when holding all other predictors constant. Where the model explained $R_{C121}^2 = 0.1488$ of the total variation in the data.
+  -- With 95% confidence, we observe that the true expected packing density for C121 space group lies within (-30342.100, -10605.731). Notice that for this data, 0 is not included within the interval which gives us strong evidence to suggest that the true relation to the common max intensity has an inverse relationship with the packing density.
