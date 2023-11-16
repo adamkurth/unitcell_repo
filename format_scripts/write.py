@@ -21,5 +21,17 @@ def write(final, intensity, phases, spacegroup, output_dir):
     with open(crystal_filename, "w") as f:
         f.write(final.to_string())
 
-    # Print the output directory
+    print(f"Output directory: {os.path.abspath(output_path)}")
+
+def write_new_approach_df(final, spacegroup, output_dir):
+    # Create a directory to store the output files
+    destination = f"{spacegroup}_output"
+    output_path = os.path.join(output_dir, destination)
+    os.makedirs(output_path, exist_ok=True)
+
+    # Write the final crystal data to a file
+    crystal_filename = f"{output_path}/{spacegroup}_new_approach_crystal_df.txt"
+    with open(crystal_filename, "w") as f:
+        f.write(final.to_string())
+
     print(f"Output directory: {os.path.abspath(output_path)}")

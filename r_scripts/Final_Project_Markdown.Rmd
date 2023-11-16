@@ -131,7 +131,7 @@ check.assumptions = function(m) {
 ```{r, message=F, warning=F, echo=F, include=F}
 fix_header_df1 = function(df) {
   # Reorder the columns with "Calculated Structure Weight" as the 3rd column
-  colnames(df) = c("Spacegroup.ID", "PDB.ID", "Calculated.Structure.Weight", "a", "b", "c", "Alpha", "Beta", "Gamma", "Unit.Vol", "Crystal.Vol", "Vol.Unit.Ratio", "Mean.Intensity", "Max.Intensity", "Min.Intensity", "MaxMin.Intensity.Dif", "Mean.Phase", "Max.Phase", "Min.Phase", "MaxMin.Phase.Difference")
+  colnames(df) = c("Spacegroup.ID", "PDB.ID", "Calculated.Structure.Weight", "a", "b", "c", "Alpha", "Beta", "Gamma", "Unit.Vol", "Crystal.Vol", "Packing.Density", "Mean.Intensity", "Max.Intensity", "Min.Intensity", "MaxMin.Intensity.Dif", "Mean.Phase", "Max.Phase", "Min.Phase", "MaxMin.Phase.Difference")
   return(df)
 }
 ####### SETUP
@@ -161,8 +161,8 @@ df1_P121 = df1_P121[,-1]
 df1_C121 = df1_C121[,-1]
 # -------------------------------------------------------------------------
 ########## FORMATTING 
-# remove the improper colnames
-colnames(df1_P1211) = c("PDB.ID", "Spacegroup", "Calc.Structure.weight", "a", "b", "c", "Alpha", "Beta", "Gamma", "Unit.Vol", "Crystal.Vol", "Vol.Unit.Ratio", "Mean.Intensity", "Max.Intensity", "Min.Intensity", "MaxMin.Intensity.Dif", "Mean.Phase", "Max.Phase", "Min.Phase", "MaxMin.Phase.Difference")
+# # remove the improper colnames
+colnames(df1_P1211) = c("PDB.ID", "Spacegroup", "Calc.Structure.weight", "a", "b", "c", "Alpha", "Beta", "Gamma", "Unit.Vol", "Packing.Density", "Mean.Intensity", "Max.Intensity", "Min.Intensity", "MaxMin.Intensity.Dif", "Mean.Phase", "Max.Phase", "Min.Phase", "MaxMin.Phase.Difference")
 colnames(df1_P1211) = sub("^X", "", colnames(df1_P1211))
 colnames(df2_P1211) = sub("^X", "", colnames(df2_P1211))
 colnames(df2_P1211) = sub("^X", "", colnames(df2_P1211))
@@ -184,8 +184,11 @@ df1_C121 = as.data.frame(df1_C121)
 df2_C121 = as.data.frame(df2_C121)
 df3_C121 = as.data.frame(df3_C121)
 
+# Calc.Structure.Weight = kDa = in kilo Da
+# PackingDensity = Da/Angstrom^3 
+
 new_colnames = c("PDB.ID", "Spacegroup.ID", "Calc.Structure.weight", "a", "b", "c", "Alpha",
-                 "Beta", "Gamma", "Unit.Vol", "Crystal.Vol", "Vol.Unit.Ratio",
+                 "Beta", "Gamma", "Unit.Vol", "Packing.Density",
                  "Mean.Intensity", "Max.Intensity", "Min.Intensity", "MaxMin.Intensity.Dif",
                  "Mean.Phase", "Max.Phase", "Min.Phase", "MaxMin.Phase.Difference")
 colnames(df1_P1211) = new_colnames
@@ -252,9 +255,9 @@ all_df1 = data.frame(); all_df2 = data.frame(); all_df3 = data.frame()
 all_df1 = bind_rows(df1_P1211, df1_P121, df1_C121)
 all_df2 = bind_rows(df2_P1211, df2_P121, df2_C121)
 all_df3 = bind_rows(df3_P1211, df3_P121, df3_C121)
-# head(all_df1)
-# head(all_df2)
-# head(all_df3)
+head(all_df1)
+head(all_df2)
+head(all_df3)
 # -------------------------------------------------------------------------
 ```
 
@@ -306,14 +309,9 @@ following examples:
     cell parameters. This is an indicator of the density of the crystal
     structure.
 
--   `Crystal.Volume`: Volume of the actual crystal used in the
-    diffraction experiment. This is important for understanding how the
-    size of the crystal affects the diffraction pattern.
-
--   `Vol.Unit.Ratio`: The ratio of the crystal volume to the unit cell
-    volume, also called packing ratio. This is used to understand the
-    packing efficiency of the crystal, in other words how tightly packed
-    each unit cell is.
+-   `Packing.Density`: Ratio of space within the crystal taken by the
+    atoms and the total space.
+    $\text{Packing.Density} = \frac{\text{Mass}}{\text{Volume}}= \frac{\text{Calc.Structure.Weight (kDa)*1000}}{\text{Unitcell.Volume}} = \frac{\text{g/mol}}{Å^3}$
 
 -   `Space Group`: The crystal's group symmetry, this is based on
     symmetric properties which are crucial for understanding the crystal
@@ -337,7 +335,7 @@ for the determination of a structure from diffraction data."
 Let us see whether there is a linear dependence of X-ray diffraction
 intensities on the number of unit cells exposed to the X-rays. This
 further refines to the more specific, within the same space group, does
-the packing ratio have any affect on the diffracted intensity?
+the packing density have any affect on the diffracted intensity?
 
 # Data Exploration:
 
@@ -373,9 +371,7 @@ leverage_plot <- function(model) {
 
 ```{r, message=FALSE, echo=T, include=T}
 # To focus on only on numerical values interested in testing.
-columns_to_remove = c("Spacegroup.ID", "PDB.ID", "a", "b", "c", "Alpha", "Beta", "Gamma", "Max.Intensity", 
-                       "Min.Intensity", "MaxMin.Intensity.Dif", "Max.Phase", 
-                       "Min.Phase", "MaxMin.Phase.Difference", "PDB.ID")
+columns_to_remove = c("Spacegroup.ID", "PDB.ID", "a", "b", "c", "Alpha", "Beta", "Gamma", "Max.Intensity", "Min.Intensity", "MaxMin.Intensity.Dif", "Max.Phase","Min.Phase", "MaxMin.Phase.Difference", "PDB.ID")
 numeric_df1_P1211 = df1_P1211[, !(names(df1_P1211) %in% columns_to_remove)]
 # Visualize correlation matrix
 cor_matrix_melt <- melt(cor_matrix <- cor(numeric_df1_P1211))
@@ -392,14 +388,15 @@ ggplot(data = cor_matrix_melt, aes(Var1, Var2, fill = value)) +
 ggpairs(numeric_df1_P1211, cardinality_threshold = 100)
 ```
 
-From the correlation matrices, its easy to see that as volume predictors
-increase, so does the structure weight. This makes sense, and is not
-interesting. The question rather, is whether the mean intensity
-predictor correlated with anything, specifically the packing ratio. As
-you can see that the largest Pearson's correlation in the matrix is that
-the predictor `Mean.Intensity` has is with `Structure.Weight` with
-$0.238$. What we are interested in has a Pearson's correlation value of
-$-0.03$.
+From the correlation matrices, its easy to see that as unit cell volume
+predictors increase, so does the structure weight. This also applies to
+the packing density since they are proportions of eachother. This makes
+sense, and is not interesting. The question rather, is whether the mean
+intensity predictor correlated with anything, specifically the packing
+density. As you can see that the largest Pearson's correlation in the
+matrix is that the predictor `Mean.Intensity` has is with
+`Structure.Weight` with $0.238$. What we are interested in has a
+Pearson's correlation value of $-0.044$.
 
 Also notice that the mean intensity and the mean phase have a seeming
 negative Pearson's correlation. The observed diffraction pattern is a
@@ -415,12 +412,12 @@ distributions, resulting in lower intensity.
 
 # Model:
 
-$$ E\{\text{Mean.Intensity}\}_{P1211} = \beta_0 + \beta_1(\text{Calc.Structure.weight}) + \beta_2(\text{Vol.Unit.Ratio}) $$
+$$ E\{\text{Mean.Intensity}\}_{P1211} = \beta_0 + \beta_1(\text{Calc.Structure.weight}) + \beta_2(\text{Packing.Density}) $$
 
 ```{r, echo=T, include=T}
 ########## MODEL for P1211 
 # -------------------------------------------------------------------------
-m.P1211 = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_P1211)
+m.P1211 = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = df1_P1211)
 par(mfrow=c(2,2))
 plot(m.P1211)
 par(mfrow=c(1,1))
@@ -433,12 +430,12 @@ a = ggplot(data = df1_P1211, aes(x = Calc.Structure.weight, y = Mean.Intensity))
   labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
        title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
 
-# Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
-b = ggplot(data = df1_P1211, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+# Scatterplot of Packing.Density vs. Mean.Intensity with regression line
+b = ggplot(data = df1_P1211, aes(x = Packing.Density, y = Mean.Intensity)) +
   geom_point() +
   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-  labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
-       title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+  labs(x = "Packing.Density", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Packing.Density")
 ggarrange(a,b)
 # This does not show linear relationship off the bat.
 # individually
@@ -460,11 +457,10 @@ par(mfrow=c(1,1))
 assumption.5.check.independence(m.P1211)
 # Visualize outliers, leverage points, and influential points
 car::influencePlot(m.P1211,id=list(labels=row.names(df1_P1211)))
-# Outliers detected rows: 4, 53, 59, 5
 ```
 
 After checking the assumption, this model passes except for potentially
-having some outliers. As indicated on the scale-location plot, and
+having a few outliers. As indicated on the scale-location plot, and
 qqplot.
 
 # Assumption 5: Cook's Distance:
@@ -522,7 +518,7 @@ outliers = df1_P1211[row.influence,]
 df1_P1211.reduced = df1_P1211 %>% anti_join(outliers)
 ########## Any improvement to the model?
 # -------------------------------------------------------------------------
-m.P1211.R = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_P1211.reduced)
+m.P1211.R = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = df1_P1211.reduced)
 # -------------------------------------------------------------------------
 # Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
 a = ggplot(data = df1_P1211.reduced, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
@@ -531,15 +527,15 @@ a = ggplot(data = df1_P1211.reduced, aes(x = Calc.Structure.weight, y = Mean.Int
   labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
        title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
 
-# Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
-b = ggplot(data = df1_P1211.reduced, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+# Scatterplot of Packing.Density vs. Mean.Intensity with regression line
+b = ggplot(data = df1_P1211.reduced, aes(x = Packing.Density, y = Mean.Intensity)) +
   geom_point() +
   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-  labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
-       title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+  labs(x = "Packing.Density", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Packing.Density")
 ggarrange(a,b)
 # -------------------------------------------------------------------------
-vif(m.P1211.R) # even lower but barely
+vif(m.P1211.R) #higher but still insignificant
 ```
 
 ```{r}
@@ -559,45 +555,64 @@ par(mfrow=c(1,2))
 calc_structure_weight_mean <- mean(df1_P1211.reduced$Calc.Structure.weight, na.rm = TRUE)
 calc_structure_weight_range <- seq(from = min(df1_P1211.reduced$Calc.Structure.weight), 
                                    to = max(df1_P1211.reduced$Calc.Structure.weight), length.out = 100)
-vol_unit_ratio_mean <- mean(df1_P1211.reduced$Vol.Unit.Ratio, na.rm = TRUE)
+packing_density_mean <- mean(df1_P1211.reduced$Packing.Density, na.rm = TRUE)
 
 x_new <- data.frame(Calc.Structure.weight = calc_structure_weight_range, 
-                    Vol.Unit.Ratio = rep(vol_unit_ratio_mean, 100))
+                    Packing.Density = rep(packing_density_mean, 100))
 
 conf.int.1 <- predict(m.P1211.R, newdata = x_new, interval = "confidence")
+pred.int.1 <- predict(m.P1211.R, newdata = x_new, interval = "prediction")
 
+# Calculate custom y-axis limits to ensure both intervals are visible
+y_limits_1 <- c(min(min(conf.int.1[, "lwr"]), min(pred.int.1[, "lwr"])),
+                max(max(conf.int.1[, "upr"]), max(pred.int.1[, "upr"])))
+
+# Plot the first confidence/prediction interval
 plot(x_new$Calc.Structure.weight, conf.int.1[, "fit"], type = "l", col = "blue", 
-     ylim = range(conf.int.1[, c("lwr", "upr")]), 
+     ylim = y_limits_1, 
      ylab = "Mean Intensity", xlab = "Calc Structure Weight")
 lines(x_new$Calc.Structure.weight, conf.int.1[, "lwr"], col = "red", lty = 2)
 lines(x_new$Calc.Structure.weight, conf.int.1[, "upr"], col = "red", lty = 2)
-# -------------------------------------------------------------------------
-# For Vol.Unit.Ratio
-vol_unit_ratio_range <- seq(from = min(df1_P1211.reduced$Vol.Unit.Ratio), 
-                            to = max(df1_P1211.reduced$Vol.Unit.Ratio), length.out = 100)
 
-x_new <- data.frame(Vol.Unit.Ratio = vol_unit_ratio_range, 
+lines(x_new$Calc.Structure.weight, pred.int.1[, "lwr"], col = "orange", lty = 2)
+lines(x_new$Calc.Structure.weight, pred.int.1[, "upr"], col = "orange", lty = 2)
+# -------------------------------------------------------------------------
+# For Packing.Density
+packing_density_range <- seq(from = min(df1_P1211.reduced$Packing.Density), 
+                            to = max(df1_P1211.reduced$Packing.Density), length.out = 100)
+
+x_new <- data.frame(Packing.Density = packing_density_range, 
                     Calc.Structure.weight = rep(calc_structure_weight_mean, 100))
 
 conf.int.2 <- predict(m.P1211.R, newdata = x_new, interval = "confidence")
+pred.int.2 <- predict(m.P1211.R, newdata = x_new, interval = "prediction")
 
-plot(x_new$Vol.Unit.Ratio, conf.int.2[, "fit"], type = "l", col = "blue", 
-     ylim = range(conf.int.2[, c("lwr", "upr")]), 
-     ylab = "Mean Intensity", xlab = "Vol.Unit.Ratio")
-lines(x_new$Vol.Unit.Ratio, conf.int.2[, "lwr"], col = "red", lty = 2)
-lines(x_new$Vol.Unit.Ratio, conf.int.2[, "upr"], col = "red", lty = 2)
+# Calculate custom y-axis limits for the second plot
+y_limits_2 <- c(min(min(conf.int.2[, "lwr"]), min(pred.int.2[, "lwr"])),
+                max(max(conf.int.2[, "upr"]), max(pred.int.2[, "upr"])))
+
+# Plot the second confidence/prediction interval
+plot(x_new$Packing.Density, conf.int.2[, "fit"], type = "l", col = "blue", 
+     ylim = y_limits_2, 
+     ylab = "Mean Intensity", xlab = "Packing Density")
+lines(x_new$Packing.Density, conf.int.2[, "lwr"], col = "red", lty = 2)
+lines(x_new$Packing.Density, conf.int.2[, "upr"], col = "red", lty = 2)
+
+lines(x_new$Packing.Density, pred.int.2[, "lwr"], col = "orange", lty = 2)
+lines(x_new$Packing.Density, pred.int.2[, "upr"], col = "orange", lty = 2)
 # -------------------------------------------------------------------------
 par(mfrow=c(1,1))
 confint(m.P1211.R)
+summary(m.P1211.R)
 ```
 
 By reducing the data set for this space group, there's an observed
-negative slope. When the packing ratio increases by 1 unit, there's a
+negative slope. When the packing density increases by 1 unit, there's a
 corresponding decrease in the average number of counted photons by
-$-244.2656$, holding all other predictors constant.
+$260.3335$, holding all other predictors constant.
 
 The confidence interval plots, and summary show that the linear relation
-between mean intensity and the packing ratio varies widely. Note that
+between mean intensity and the packing density varies widely. Note that
 this interval's lower bound is negative, and the upper bound is
 positive. Thus, the slope could be 0.
 
@@ -609,7 +624,7 @@ other space groups should be investigated.
 ```{r, warning=F,message=F, echo=T}
 ########## MODEL for P121
 # -------------------------------------------------------------------------
-m.P121 = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_P121)
+m.P121 = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = df1_P121)
 par(mfrow=c(2,2))
 plot(m.P1211)
 par(mfrow=c(1,1))
@@ -622,12 +637,12 @@ a = ggplot(data = df1_P121, aes(x = Calc.Structure.weight, y = Mean.Intensity)) 
   labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
        title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
 
-# Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
-b = ggplot(data = df1_P121, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+# Scatterplot of Packing.Density vs. Mean.Intensity with regression line
+b = ggplot(data = df1_P121, aes(x = Packing.Density, y = Mean.Intensity)) +
   geom_point() +
   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-  labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
-       title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+  labs(x = "Packing.Density", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Packing.Density")
 ggarrange(a,b)
 # This does not show linear relationship off the bat.
 # individually
@@ -651,7 +666,7 @@ outliers = df1_P121[row.influence,]
 df1_P121.reduced = df1_P121 %>% anti_join(outliers)
 ########## Any improvement to the model?
 # -------------------------------------------------------------------------
-m.P121.R = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_P121.reduced)
+m.P121.R = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = df1_P121.reduced)
 # -------------------------------------------------------------------------
 # Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
 a = ggplot(data = df1_P121.reduced, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
@@ -660,47 +675,66 @@ a = ggplot(data = df1_P121.reduced, aes(x = Calc.Structure.weight, y = Mean.Inte
   labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
        title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
 
-# Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
-b =ggplot(data = df1_P121.reduced, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+# Scatterplot of Packing.Density vs. Mean.Intensity with regression line
+b =ggplot(data = df1_P121.reduced, aes(x = Packing.Density, y = Mean.Intensity)) +
   geom_point() +
   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-  labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
-       title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+  labs(x = "Packing.Density", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Packing.Density")
 ggarrange(a,b)
 # -------------------------------------------------------------------------
+# Set up the plotting environment for two plots side by side
 par(mfrow=c(1,2))
 # -------------------------------------------------------------------------
 # For Calc.Structure.weight
 calc_structure_weight_mean <- mean(df1_P121.reduced$Calc.Structure.weight, na.rm = TRUE)
 calc_structure_weight_range <- seq(from = min(df1_P121.reduced$Calc.Structure.weight), 
                                    to = max(df1_P121.reduced$Calc.Structure.weight), length.out = 100)
-vol_unit_ratio_mean <- mean(df1_P121.reduced$Vol.Unit.Ratio, na.rm = TRUE)
+vol_unit_ratio_mean <- mean(df1_P121.reduced$Packing.Density, na.rm = TRUE)
 
 x_new <- data.frame(Calc.Structure.weight = calc_structure_weight_range, 
-                    Vol.Unit.Ratio = rep(vol_unit_ratio_mean, 100))
+                    Packing.Density = rep(vol_unit_ratio_mean, 100))
 
 conf.int.1 <- predict(m.P121.R, newdata = x_new, interval = "confidence")
+pred.int.1 <- predict(m.P121.R, newdata = x_new, interval = "prediction")
 
+# Calculate custom y-axis limits to ensure both intervals are visible
+y_limits_1 <- c(min(min(conf.int.1[, "lwr"]), min(pred.int.1[, "lwr"])),
+                max(max(conf.int.1[, "upr"]), max(pred.int.1[, "upr"])))
+
+# Plot the first confidence/prediction interval
 plot(x_new$Calc.Structure.weight, conf.int.1[, "fit"], type = "l", col = "blue", 
-     ylim = range(conf.int.1[, c("lwr", "upr")]), 
+     ylim = y_limits_1, 
      ylab = "Mean Intensity", xlab = "Calc Structure Weight")
 lines(x_new$Calc.Structure.weight, conf.int.1[, "lwr"], col = "red", lty = 2)
 lines(x_new$Calc.Structure.weight, conf.int.1[, "upr"], col = "red", lty = 2)
-# -------------------------------------------------------------------------
-# For Vol.Unit.Ratio
-vol_unit_ratio_range <- seq(from = min(df1_P121.reduced$Vol.Unit.Ratio), 
-                            to = max(df1_P121.reduced$Vol.Unit.Ratio), length.out = 100)
 
-x_new <- data.frame(Vol.Unit.Ratio = vol_unit_ratio_range, 
+lines(x_new$Calc.Structure.weight, pred.int.1[, "lwr"], col = "orange", lty = 2)
+lines(x_new$Calc.Structure.weight, pred.int.1[, "upr"], col = "orange", lty = 2)
+# -------------------------------------------------------------------------
+# For Packing.Density
+vol_unit_ratio_range <- seq(from = min(df1_P121.reduced$Packing.Density), 
+                            to = max(df1_P121.reduced$Packing.Density), length.out = 100)
+
+x_new <- data.frame(Packing.Density = vol_unit_ratio_range, 
                     Calc.Structure.weight = rep(calc_structure_weight_mean, 100))
 
 conf.int.2 <- predict(m.P121.R, newdata = x_new, interval = "confidence")
+pred.int.2 <- predict(m.P121.R, newdata = x_new, interval = "prediction")
 
-plot(x_new$Vol.Unit.Ratio, conf.int.2[, "fit"], type = "l", col = "blue", 
-     ylim = range(conf.int.2[, c("lwr", "upr")]), 
-     ylab = "Mean Intensity", xlab = "Vol.Unit.Ratio")
-lines(x_new$Vol.Unit.Ratio, conf.int.2[, "lwr"], col = "red", lty = 2)
-lines(x_new$Vol.Unit.Ratio, conf.int.2[, "upr"], col = "red", lty = 2)
+# Calculate custom y-axis limits for the second plot
+y_limits_2 <- c(min(min(conf.int.2[, "lwr"]), min(pred.int.2[, "lwr"])),
+                max(max(conf.int.2[, "upr"]), max(pred.int.2[, "upr"])))
+
+# Plot the second confidence/prediction interval
+plot(x_new$Packing.Density, conf.int.2[, "fit"], type = "l", col = "blue", 
+     ylim = y_limits_2, 
+     ylab = "Mean Intensity", xlab = "Packing Density")
+lines(x_new$Packing.Density, conf.int.2[, "lwr"], col = "red", lty = 2)
+lines(x_new$Packing.Density, conf.int.2[, "upr"], col = "red", lty = 2)
+
+lines(x_new$Packing.Density, pred.int.2[, "lwr"], col = "orange", lty = 2)
+lines(x_new$Packing.Density, pred.int.2[, "upr"], col = "orange", lty = 2)
 # -------------------------------------------------------------------------
 par(mfrow=c(1,1))
 confint(m.P121.R)
@@ -711,7 +745,7 @@ confint(m.P121.R)
 ```{r, message=F, warning=F, echo=T}
 ########## MODEL for C121 
 # -------------------------------------------------------------------------
-m.C121 = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_C121)
+m.C121 = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = df1_C121)
 par(mfrow=c(2,2))
 plot(m.C121)
 par(mfrow=c(1,1))
@@ -724,12 +758,12 @@ a = ggplot(data = df1_C121, aes(x = Calc.Structure.weight, y = Mean.Intensity)) 
   labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
        title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
 
-# Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
-b = ggplot(data = df1_C121, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+# Scatterplot of Packing.Density vs. Mean.Intensity with regression line
+b = ggplot(data = df1_C121, aes(x = Packing.Density, y = Mean.Intensity)) +
   geom_point() +
   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-  labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
-       title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+  labs(x = "Packing.Density", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Packing.Density")
 ggarrange(a,b)
 # This does not show linear relationship off the bat.
 # individually
@@ -752,7 +786,7 @@ outliers = df1_C121[row.influence,]
 df1_C121.reduced = df1_C121 %>% anti_join(outliers)
 ########## Any improvement to the model?
 # -------------------------------------------------------------------------
-m.C121.R = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_C121.reduced)
+m.C121.R = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = df1_C121.reduced)
 # -------------------------------------------------------------------------
 # Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
 a = ggplot(data = df1_C121.reduced, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
@@ -761,12 +795,12 @@ a = ggplot(data = df1_C121.reduced, aes(x = Calc.Structure.weight, y = Mean.Inte
   labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
        title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
 
-# Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
-b = ggplot(data = df1_C121.reduced, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+# Scatterplot of Packing.Density vs. Mean.Intensity with regression line
+b = ggplot(data = df1_C121.reduced, aes(x = Packing.Density, y = Mean.Intensity)) +
   geom_point() +
   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-  labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
-       title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+  labs(x = "Packing.Density", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Packing.Density")
 ggarrange(a,b)
 # -------------------------------------------------------------------------
 par(mfrow=c(1,2))
@@ -775,33 +809,54 @@ par(mfrow=c(1,2))
 calc_structure_weight_mean <- mean(df1_C121.reduced$Calc.Structure.weight, na.rm = TRUE)
 calc_structure_weight_range <- seq(from = min(df1_C121.reduced$Calc.Structure.weight), 
                                    to = max(df1_C121.reduced$Calc.Structure.weight), length.out = 100)
-vol_unit_ratio_mean <- mean(df1_C121.reduced$Vol.Unit.Ratio, na.rm = TRUE)
+vol_unit_ratio_mean <- mean(df1_C121.reduced$Packing.Density, na.rm = TRUE)
 
 x_new <- data.frame(Calc.Structure.weight = calc_structure_weight_range, 
-                    Vol.Unit.Ratio = rep(vol_unit_ratio_mean, 100))
+                    Packing.Density = rep(vol_unit_ratio_mean, 100))
 
 conf.int.1 <- predict(m.C121.R, newdata = x_new, interval = "confidence")
+pred.int.1 <- predict(m.C121.R, newdata = x_new, interval = "prediction")
 
+# Calculate custom y-axis limits for the first plot
+y_limits_1 <- c(min(min(conf.int.1[, "lwr"]), min(pred.int.1[, "lwr"])),
+                max(max(conf.int.1[, "upr"]), max(pred.int.1[, "upr"])))
+
+# Plot the first confidence interval
 plot(x_new$Calc.Structure.weight, conf.int.1[, "fit"], type = "l", col = "blue", 
-     ylim = range(conf.int.1[, c("lwr", "upr")]), 
+     ylim = y_limits_1, 
      ylab = "Mean Intensity", xlab = "Calc Structure Weight")
 lines(x_new$Calc.Structure.weight, conf.int.1[, "lwr"], col = "red", lty = 2)
 lines(x_new$Calc.Structure.weight, conf.int.1[, "upr"], col = "red", lty = 2)
-# -------------------------------------------------------------------------
-# For Vol.Unit.Ratio
-vol_unit_ratio_range <- seq(from = min(df1_C121.reduced$Vol.Unit.Ratio), 
-                            to = max(df1_C121.reduced$Vol.Unit.Ratio), length.out = 100)
 
-x_new <- data.frame(Vol.Unit.Ratio = vol_unit_ratio_range, 
+# Add lines for the lower and upper bounds of the prediction interval in orange
+lines(x_new$Calc.Structure.weight, pred.int.1[, "lwr"], col = "orange", lty = 2)
+lines(x_new$Calc.Structure.weight, pred.int.1[, "upr"], col = "orange", lty = 2)
+# -------------------------------------------------------------------------
+# For Packing.Density
+vol_unit_ratio_range <- seq(from = min(df1_C121.reduced$Packing.Density), 
+                            to = max(df1_C121.reduced$Packing.Density), length.out = 100)
+
+x_new <- data.frame(Packing.Density = vol_unit_ratio_range, 
                     Calc.Structure.weight = rep(calc_structure_weight_mean, 100))
 
 conf.int.2 <- predict(m.C121.R, newdata = x_new, interval = "confidence")
+pred.int.2 <- predict(m.C121.R, newdata = x_new, interval = "prediction")
 
-plot(x_new$Vol.Unit.Ratio, conf.int.2[, "fit"], type = "l", col = "blue", 
-     ylim = range(conf.int.2[, c("lwr", "upr")]), 
-     ylab = "Mean Intensity", xlab = "Vol.Unit.Ratio")
-lines(x_new$Vol.Unit.Ratio, conf.int.2[, "lwr"], col = "red", lty = 2)
-lines(x_new$Vol.Unit.Ratio, conf.int.2[, "upr"], col = "red", lty = 2)
+# Calculate custom y-axis limits for the second plot
+y_limits_2 <- c(min(min(conf.int.2[, "lwr"]), min(pred.int.2[, "lwr"])),
+                max(max(conf.int.2[, "upr"]), max(pred.int.2[, "upr"])))
+
+# Plot the second confidence interval
+plot(x_new$Packing.Density, conf.int.2[, "fit"], type = "l", col = "blue", 
+     ylim = y_limits_2, 
+     ylab = "Mean Intensity", xlab = "Packing Density")
+lines(x_new$Packing.Density, conf.int.2[, "lwr"], col = "red", lty = 2)
+lines(x_new$Packing.Density, conf.int.2[, "upr"], col = "red", lty = 2)
+
+# Add lines for the lower and upper bounds of the prediction interval in orange
+lines(x_new$Packing.Density, pred.int.2[, "lwr"], col = "orange", lty = 2)
+lines(x_new$Packing.Density, pred.int.2[, "upr"], col = "orange", lty = 2)
+
 # -------------------------------------------------------------------------
 par(mfrow=c(1,1))
 confint(m.C121.R)
@@ -819,9 +874,9 @@ plot(all_df1$Spacegroup.ID, all_df1$Mean.Intensity, data=all_df1) # does not loo
 ```{r, warning=F}
 ############## FULL MODEL
 # Since the mean intensity does not seem to change for the given spacegroups...
-model.all = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = all_df1)
+model.all = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = all_df1)
 par(mfrow=c(2,2))
-plot(m.C121)
+plot(model.all)
 par(mfrow=c(1,1))
 summary(model.all)
 car::influencePlot(model.all)
@@ -834,12 +889,12 @@ a = ggplot(data = all_df1, aes(x = Calc.Structure.weight, y = Mean.Intensity)) +
   labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
        title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
 
-# Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
-b = ggplot(data = all_df1, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+# Scatterplot of Packing.Density vs. Mean.Intensity with regression line
+b = ggplot(data = all_df1, aes(x = Packing.Density, y = Mean.Intensity)) +
   geom_point() +
   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-  labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
-       title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+  labs(x = "Packing.Density", y = "Mean.Intensity", 
+       title = "Scatterplot of Mean.Intensity vs. Packing.Density")
 ggarrange(a,b)
 # -------------------------------------------------------------------------
 ######### Remove outliers for model.all
@@ -850,7 +905,7 @@ row.influence = names(influence)
 outliers = all_df1[row.influence,]
 all_df1.reduced = all_df1 %>% anti_join(outliers)
 ########## Any improvement to the model?
-model.all.reduced = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = all_df1.reduced)
+model.all.reduced = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = all_df1.reduced)
 par(mfrow=c(2,2))
 plot(model.all.reduced)
 par(mfrow=c(1,1))
@@ -863,41 +918,63 @@ par(mfrow=c(1,2))
 calc_structure_weight_mean <- mean(all_df1.reduced$Calc.Structure.weight, na.rm = TRUE)
 calc_structure_weight_range <- seq(from = min(all_df1.reduced$Calc.Structure.weight), 
                                    to = max(all_df1.reduced$Calc.Structure.weight), length.out = 100)
-vol_unit_ratio_mean <- mean(all_df1.reduced$Vol.Unit.Ratio, na.rm = TRUE)
+vol_unit_ratio_mean <- mean(all_df1.reduced$Packing.Density, na.rm = TRUE)
 
 x_new <- data.frame(Calc.Structure.weight = calc_structure_weight_range, 
-                    Vol.Unit.Ratio = rep(vol_unit_ratio_mean, 100))
+                    Packing.Density = rep(vol_unit_ratio_mean, 100))
 
 conf.int.1 <- predict(model.all.reduced, newdata = x_new, interval = "confidence")
+pred.int.1 <- predict(model.all.reduced, newdata = x_new, interval = "prediction")
 
+# Calculate custom y-axis limits for the first plot
+y_limits_1 <- c(min(min(conf.int.1[, "lwr"]), min(pred.int.1[, "lwr"])),
+                max(max(conf.int.1[, "upr"]), max(pred.int.1[, "upr"])))
+
+# Plot the first confidence interval
 plot(x_new$Calc.Structure.weight, conf.int.1[, "fit"], type = "l", col = "blue", 
-     ylim = range(conf.int.1[, c("lwr", "upr")]), 
+     ylim = y_limits_1, 
      ylab = "Mean Intensity", xlab = "Calc Structure Weight")
 lines(x_new$Calc.Structure.weight, conf.int.1[, "lwr"], col = "red", lty = 2)
 lines(x_new$Calc.Structure.weight, conf.int.1[, "upr"], col = "red", lty = 2)
-# -------------------------------------------------------------------------
-# For Vol.Unit.Ratio
-vol_unit_ratio_range <- seq(from = min(all_df1.reduced$Vol.Unit.Ratio), 
-                            to = max(all_df1.reduced$Vol.Unit.Ratio), length.out = 100)
 
-x_new <- data.frame(Vol.Unit.Ratio = vol_unit_ratio_range, 
+# Add lines for the lower and upper bounds of the prediction interval in orange
+lines(x_new$Calc.Structure.weight, pred.int.1[, "lwr"], col = "orange", lty = 2)
+lines(x_new$Calc.Structure.weight, pred.int.1[, "upr"], col = "orange", lty = 2)
+# -------------------------------------------------------------------------
+# For Packing.Density
+vol_unit_ratio_range <- seq(from = min(all_df1.reduced$Packing.Density), 
+                            to = max(all_df1.reduced$Packing.Density), length.out = 100)
+
+x_new <- data.frame(Packing.Density = vol_unit_ratio_range, 
                     Calc.Structure.weight = rep(calc_structure_weight_mean, 100))
 
 conf.int.2 <- predict(model.all.reduced, newdata = x_new, interval = "confidence")
+pred.int.2 <- predict(model.all.reduced, newdata = x_new, interval = "prediction")
 
-plot(x_new$Vol.Unit.Ratio, conf.int.2[, "fit"], type = "l", col = "blue", 
-     ylim = range(conf.int.2[, c("lwr", "upr")]), 
-     ylab = "Mean Intensity", xlab = "Vol.Unit.Ratio")
-lines(x_new$Vol.Unit.Ratio, conf.int.2[, "lwr"], col = "red", lty = 2)
-lines(x_new$Vol.Unit.Ratio, conf.int.2[, "upr"], col = "red", lty = 2)
+# Calculate custom y-axis limits for the second plot
+y_limits_2 <- c(min(min(conf.int.2[, "lwr"]), min(pred.int.2[, "lwr"])),
+                max(max(conf.int.2[, "upr"]), max(pred.int.2[, "upr"])))
+
+# Plot the second confidence interval
+plot(x_new$Packing.Density, conf.int.2[, "fit"], type = "l", col = "blue", 
+     ylim = y_limits_2, 
+     ylab = "Mean Intensity", xlab = "Packing Density")
+lines(x_new$Packing.Density, conf.int.2[, "lwr"], col = "red", lty = 2)
+lines(x_new$Packing.Density, conf.int.2[, "upr"], col = "red", lty = 2)
+
+# Add lines for the lower and upper bounds of the prediction interval in orange
+lines(x_new$Packing.Density, pred.int.2[, "lwr"], col = "orange", lty = 2)
+lines(x_new$Packing.Density, pred.int.2[, "upr"], col = "orange", lty = 2)
 # -------------------------------------------------------------------------
+# Reset the plotting environment to one plot
 par(mfrow=c(1,1))
-confint(m.C121.R)
+# -------------------------------------------------------------------------
+confint(model.all)
 ```
 
 ```{r, warning=F, message=F}
 # Since the mean intensity does not seem to change for the given spacegroups...
-model.all = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = all_df1.reduced)
+model.all = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = all_df1.reduced)
 par(mfrow=c(2,2))
 plot(m.C121)
 par(mfrow=c(1,1))
@@ -920,24 +997,26 @@ par(mfrow=c(1,1))
 summary(model.all.R)
 car::influencePlot(model.all.R)
 # -------------------------------------------------------------------------
-# For Calc.Structure.weight
-calc_structure_weight_mean <- mean(all_df1.reduced$Calc.Structure.weight, na.rm = TRUE)
-calc_structure_weight_range <- seq(from = min(all_df1.reduced$Calc.Structure.weight), 
-                                   to = max(all_df1.reduced$Calc.Structure.weight), length.out = 100)
-vol_unit_ratio_mean <- mean(all_df1.reduced$Vol.Unit.Ratio, na.rm = TRUE)
-
-x_new <- data.frame(Calc.Structure.weight = calc_structure_weight_range, 
-                    Vol.Unit.Ratio = rep(vol_unit_ratio_mean, 100))
+# For Confidence Interval
+# Calculate custom y-axis limits for the first plot
 
 conf.int.1 <- predict(model.all.reduced, newdata = x_new, interval = "confidence")
+pred.int.1 <- predict(model.all.reduced, newdata = x_new, interval = "prediction")
 
+y_limits_1 <- range(pred.int.1[, c("lwr", "upr")])
+
+# Plot the confidence interval
 plot(x_new$Calc.Structure.weight, conf.int.1[, "fit"], type = "l", col = "blue", 
-     ylim = range(conf.int.1[, c("lwr", "upr")]), 
+     ylim = y_limits_1, 
      ylab = "Mean Intensity", xlab = "Calc Structure Weight")
 lines(x_new$Calc.Structure.weight, conf.int.1[, "lwr"], col = "red", lty = 2)
 lines(x_new$Calc.Structure.weight, conf.int.1[, "upr"], col = "red", lty = 2)
+
+lines(x_new$Calc.Structure.weight, pred.int.1[, "lwr"], col = "orange", lty = 2)
+lines(x_new$Calc.Structure.weight, pred.int.1[, "upr"], col = "orange", lty = 2)
 # -------------------------------------------------------------------------
-confint(model.all.R)
+# Reset the plotting environment to one plot
+par(mfrow=c(1,1))
 ```
 
 # Hypothesis Test:
@@ -948,7 +1027,7 @@ Going to use $\alpha = 0.05$ as the significance value.
 1.  Assumptions: $\varepsilon \overset{iid}{\sim} N(0,1)$
 
 Alternatives: Define Models: $Y$ as `Mean.Intensity`. $X_1$ as
-`Calc.Structure.weight`. $X_2$ as `Vol.Unit.Ratio`.
+`Calc.Structure.weight`. $X_2$ as `Packing.Density`.
 
 $E\{Y\}_{\text{reduced.model}} = \beta_0 + \beta_1X_1$
 $E\{Y\}_{\text{full.model}} = \beta_0 + \beta_1X_1 + \beta_2X_2$
@@ -985,42 +1064,179 @@ Warranting further investigation, this result suggests that the
 $\textit{true}$ structure weight also has a significant effect on the
 $\text{observed}$, $\textit{experimental}$ intensity values.
 
-## 
+## Another Approach:
+
+Let us introduce more context for the next approach:
+
+-   `h,k,l`: Also called Miller indices, are the orientation of the
+    crystal lattice planes in three-dimensional reciprocal space. This
+    means,
 
 ```{r}
-# -------------------------------------------------------------------------
-# TRIAL
-# percentile.90 = apply(all_df2[, -c(1,2)], 1, function(x) quantile(x, 0.9, na.rm=T)
-# top.10.percent.df = all_df2[ mapply(function(row, threshold) any(row > threshold), all_df2[, -c(1,2)], percentile.90), ]
-# top.10.percent.df
-# 
-# 
-# 
-# top.10.percent.logical = all_df2[,c(1,2)] > percentile.90
-# row.in.top.10.percent = rowSums(top.10.percent.logical) > 0
-# top.10.df = all_df2[row.in.top.10.percent, ]
-# 
-# 
-# 
-# # -------------------------------------------------------------------------
-# plot(Mean.Intensity ~ Spacegroup.ID, all_df1)
-# 
-# plot(m.P1211)
-# 
-# car::avPlots(m.P1211)
-# 
-# ncol(all_df2)
-# 
-# mean.top10 = apply(all_df2[, 3:ncol(all_df2)], MARGIN = 1, FUN = function(x) mean(sort(x, decreasing=T)[1:(337)]))
-# mean.top10
-# 
-# head(mean.top10)
-# 
-# m = lm(mean.top10 ~ df1_P1211$Vol.Unit.Ratio)
-# 
-# 
-# length(df1_P1211$Vol.Unit.Ratio)
-# length(mean.top10)
+P1211 = read.table("../P1211_output/P1211_new_approach_crystal_df.txt", header = TRUE, fill = TRUE)
+P121 = read.table("../P121_output/P121_new_approach_crystal_df.txt", header = TRUE, fill = TRUE)
+C121 = read.table("../C121_output/C121_new_approach_crystal_df.txt", header = TRUE, fill = TRUE)
+new_colnames = c('', 
+                'PDB_ID',
+               'Spacegroup',
+               'Calculated.Structure.Weight',
+               'a', 'b', 'c',
+               'alpha', 'beta', 'gamma', 
+               'h', 'k', 'l',
+               'Reflection.Max.Intensity.Value',
+               'UnitCellVolume', 
+               'Packing.Density',
+               'Mean.Intensity', 
+               'Max.Intensity', 
+               'Min.Intensity', 
+               'Max.Min.Intensity.Difference',
+               'Mean.Phase', 
+               'Max.Phase', 
+               'Min.Phase', 
+               'Max.Min.Phase.Difference')
+colnames(P1211) = new_colnames
+colnames(P121) = new_colnames
+colnames(C121) = new_colnames
+P1211 = P1211[,-1]
+P121 = P121[, -1]
+C121 = C121[, -1]
+P1211 = P1211[, sapply(P1211, function(col) !all(is.na(col)))]
+P121 = P121[, sapply(P121, function(col) !all(is.na(col)))]
+C121 = C121[, sapply(C121, function(col) !all(is.na(col)))]
+
+all_df = rbind(P1211,P121,C121)
+```
+
+## Data Exploration
+
+```{r, message=FALSE, warning=FALSE}
+keep = c('Calculated.Structure.Weight',
+ 'Reflection.Max.Intensity.Value',
+ 'UnitCellVolume', 
+ 'Packing.Density',
+ 'Mean.Intensity')
+numeric = P1211[, (names(P1211) %in% keep)]
+ggpairs(numeric,cardinality_threshold = 100)
+pairs(numeric)
+```
+
+It seems that from the pairs plot, that the max reflection predictor (`Reflection.Max.Intensty`) from first glance have a negative curvilinear relationship. This looks inversely proportional, much like the structure weight and packing density relationship, which we know is since $\text{Packing.Density} = \frac{\text{Calc.Structure.Weight}*1000}{\text{Unit.Cell.Volume}} =\frac{\text{g/mol}}{Å^3}$. This is interesting since the max of the intensity values in the `.hkl` files was taken, then for every `.pdb` file the same row was taken and outputted into this data frame.
+
+```{r}
+Packing.Density.2 = Packing.Density^2
+m.poly = lm(Reflection.Max.Intensity.Value ~ Packing.Density + Packing.Density.2, data=P1211)
+ggplot(data = P1211, aes(x = Packing.Density, y = Reflection.Max.Intensity.Value)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), col = "red") +
+  labs(x = "Packing.Density", y = "Reflection.Max.Intensity.Value", 
+ title = "Scatterplot of Packing.Density vs. Reflection.Max.Intensity.Value")
+```
+
+```{r}
+car::influencePlot(m.poly)
+```
+
+Removing the high influence points here did not change the 
+
+```{r, message=FALSE, warning=FALSE}
+########## Treating outliers.
+cooks.d = cooks.distance(m.poly)
+influence = cooks.d[(cooks.d > (3*mean(cooks.d, na.rm = T)))]
+influence # see that most of the rows stated above are in this list
+row.influence = names(influence)
+outliers = P1211[row.influence,]
+P1211.reduced = P1211 %>% anti_join(outliers)
+P1211.reduced$Packing.Density.2 = P1211.reduced$Packing.Density^2
+m.poly.reduced = lm(Reflection.Max.Intensity.Value ~ Packing.Density +
+Packing.Density.2, data=P1211.reduced)
+car::influencePlot(m.poly.reduced)
+```
+## Model
+
+$$ E\{\text{Reflection.Max.Intensity.Value}\}_{P1211} = \beta_0 + \beta_{1}(\text{Packing.Density}) + \beta_{11}(\text{Packing.Density})^2$$
+Here we define the polynomial model where the added $\beta_{11}$ coefficient was added from the assumption that this was a 
+
+```{r}
+ggplot(data = P1211.reduced, aes(x = Packing.Density, y = Reflection.Max.Intensity.Value)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), col = "red") +
+  labs(x = "Packing.Density", y = "Reflection.Max.Intensity.Value", 
+       title = "Scatterplot of Packing.Density vs. Reflection.Max.Intensity.Value")
+```
+
+```{r}
+```
+
+```{r,warning=FALSE, message=FALSE}
+
+```
+
+```{r}
+Packing.Density.2 = Packing.Density^2
+m.poly = lm(Reflection.Max.Intensity.Value ~ Packing.Density + Packing.Density.2, data=P1211)
+summary(m.poly)
+plot(Packing.Density, Reflection.Max.Intensity.Value, data=P1211)
+
+car::influencePlot(m.poly)
+
+
+
+abline(m.poly)
+summary(m.poly)
+
+plot(lm(Reflection.Max.Intensity.Value ~ Packing.Density, data=P1211))
+
+     
+plot(Packing.Density, Reflection.Max.Intensity.Value, data=P1211)
+
+plot(Calculated.Structure.Weight, Reflection.Max.Intensity.Value, data=P1211)
+
+plot(Calculated.Structure.Weight, Reflection.Max.Intensity.Value, data=P1211)
+
+
+
+
+
+
+```
+
+```{r}
+# Calculate the mean of Reflection.Max.Intensity.Value
+reflection_mean <- mean(P1211$Reflection.Max.Intensity.Value)
+
+# Define a sequence of Packing.Density values
+density_range <- seq(min(P1211$Packing.Density), max(P1211$Packing.Density), length.out = 100)
+
+# Create a data frame with the sequence of Packing.Density values
+x_new <- data.frame(Packing.Density = density_range)
+
+# Predict the mean and confidence interval using your polynomial regression model
+conf.int <- predict(m.poly, newdata = x_new, interval = "confidence")
+
+# Calculate average bounds of the confidence interval
+avg_lower_bound <- rowMeans(conf.int[, c("lwr", "fit")])
+avg_upper_bound <- rowMeans(conf.int[, c("upr", "fit")])
+
+# Create a data frame for plotting
+plot_data <- data.frame(
+  Packing.Density = x_new$Packing.Density,
+  Mean_Reflection_Intensity = conf.int[, "fit"],
+  Lower_CI = conf.int[, "lwr"],
+  Upper_CI = conf.int[, "upr"],
+  Avg_Lower_CI = avg_lower_bound,
+  Avg_Upper_CI = avg_upper_bound
+)
+ggplot(plot_data, aes(x = Packing.Density)) +
+  geom_line(aes(y = Mean_Reflection_Intensity), color = "blue") +
+  geom_ribbon(aes(ymin = Lower_CI, ymax = Upper_CI), fill = "blue", alpha = 0.3) +
+  geom_line(aes(y = Avg_Lower_CI), color = "red", linetype = "dashed") +
+  geom_line(aes(y = Avg_Upper_CI), color = "red", linetype = "dashed") +
+  labs(
+    x = "Packing Density",
+    y = "Mean Reflection Intensity",
+    title = "Smooth Confidence Interval Plot with Average Bounds"
+  ) +
+  theme_minimal()
 
 ```
 
@@ -1036,23 +1252,23 @@ $\text{observed}$, $\textit{experimental}$ intensity values.
 #   }
 # })
 # 
-# #align the mean.top10 and the vol.unit.ratio by selecting all of the 299 rows of df1_P1211$Vol.Unit.Ratio to match the length of mean.top10, and creates a new df of the vectors.
-# aligned_df = data.frame(mean.top10, Vol.Unit.Ratio = df1_P1211$Vol.Unit.Ratio[1:299])
-# aligned_df = aligned_df[!is.na(df1_P1211$Vol.Unit.Ratio), ]
+# #align the mean.top10 and the Packing.Density by selecting all of the 299 rows of df1_P1211$Packing.Density to match the length of mean.top10, and creates a new df of the vectors.
+# aligned_df = data.frame(mean.top10, Packing.Density = df1_P1211$Packing.Density[1:299])
+# aligned_df = aligned_df[!is.na(df1_P1211$Packing.Density), ]
 # aligned_df
 # 
-# m.percentile.P1211 = lm(mean.top10 ~ Vol.Unit.Ratio, data = aligned_df)
+# m.percentile.P1211 = lm(mean.top10 ~ Packing.Density, data = aligned_df)
 # par(mfrow = c(2, 2))
 # plot(m.percentile.P1211)
 # par(mfrow = c(1, 1))
 # 
 # # -------------------------------------------------------------------------
 # # Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
-# ggplot(data = aligned_df, aes(x = mean.top10, y = Vol.Unit.Ratio)) +
+# ggplot(data = aligned_df, aes(x = mean.top10, y = Packing.Density)) +
 #   geom_point() +
 #   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-#   labs(x = "mean.top10", y = "vol.unit.ratio", 
-#        title = "Scatterplot of mean.top10 vs. vol.unit.ratio")
+#   labs(x = "mean.top10", y = "Packing.Density", 
+#        title = "Scatterplot of mean.top10 vs. Packing.Density")
 # 
 # fitted = fitted(m)
 # residuals = residuals(m)
@@ -1080,7 +1296,7 @@ $\text{observed}$, $\textit{experimental}$ intensity values.
 # outliers = df1_P1211[row.influence,]
 # df1_P1211.reduced = df1_P1211 %>% anti_join(outliers)
 # 
-# m.P1211.R = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_P1211.reduced)
+# m.P1211.R = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = df1_P1211.reduced)
 # vif(m.P1211.R) # even lower but barely
 # # -------------------------------------------------------------------------
 # # Scatterplot of Calc.Structure.weight vs. Mean.Intensity with regression line
@@ -1090,12 +1306,12 @@ $\text{observed}$, $\textit{experimental}$ intensity values.
 #   labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
 #        title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
 # 
-# # Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
-# b = ggplot(data = df1_P1211.reduced, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+# # Scatterplot of Packing.Density vs. Mean.Intensity with regression line
+# b = ggplot(data = df1_P1211.reduced, aes(x = Packing.Density, y = Mean.Intensity)) +
 #   geom_point() +
 #   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-#   labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
-#        title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+#   labs(x = "Packing.Density", y = "Mean.Intensity", 
+#        title = "Scatterplot of Mean.Intensity vs. Packing.Density")
 # ggarrange(a,b, nrow =2)
 # # -------------------------------------------------------------------------
 # car::influencePlot(m.P1211.R,id=list(labels=row.names(df1_P1211.reduced))) # did not help much
@@ -1117,7 +1333,7 @@ $\text{observed}$, $\textit{experimental}$ intensity values.
 # outliers = df1_P1211.reduced[row.influence,]
 # df1_P1211.reduced = df1_P1211.reduced %>% anti_join(outliers)
 # 
-# m.P1211.R = lm(Mean.Intensity ~ Calc.Structure.weight + Vol.Unit.Ratio, data = df1_P1211.reduced)
+# m.P1211.R = lm(Mean.Intensity ~ Calc.Structure.weight + Packing.Density, data = df1_P1211.reduced)
 # 
 # # -------------------------------------------------------------------------
 # 
@@ -1130,12 +1346,12 @@ $\text{observed}$, $\textit{experimental}$ intensity values.
 #   labs(x = "Calc.Structure.weight", y = "Mean.Intensity", 
 #        title = "Scatterplot of Mean.Intensity vs. Calc.Structure.weight")
 # 
-# # Scatterplot of Vol.Unit.Ratio vs. Mean.Intensity with regression line
-# ggplot(data = df1_P1211.reduced, aes(x = Vol.Unit.Ratio, y = Mean.Intensity)) +
+# # Scatterplot of Packing.Density vs. Mean.Intensity with regression line
+# ggplot(data = df1_P1211.reduced, aes(x = Packing.Density, y = Mean.Intensity)) +
 #   geom_point() +
 #   geom_smooth(method = "lm", formula = y ~ x, col = "red") +
-#   labs(x = "Vol.Unit.Ratio", y = "Mean.Intensity", 
-#        title = "Scatterplot of Mean.Intensity vs. Vol.Unit.Ratio")
+#   labs(x = "Packing.Density", y = "Mean.Intensity", 
+#        title = "Scatterplot of Mean.Intensity vs. Packing.Density")
 # 
 # car::influencePlot(m.P1211.R,id=list(labels=row.names(df1_P1211.reduced)))
 
@@ -1188,10 +1404,10 @@ perfectly colinear.
 # ggpairs(numeric_df1_P1211, cardinality_threshold = 100)
 # 
 # # centering 
-# numeric_df1_P1211$Vol.Unit.Ratio.c = numeric_df1_P1211$Vol.Unit.Ratio - mean(numeric_df1_P1211$Vol.Unit.Ratio)
-# numeric_df1_P1211$Vol.Unit.Ratio.c.2 = numeric_df1_P1211$Vol.Unit.Ratio.c^2
+# numeric_df1_P1211$Packing.Density.c = numeric_df1_P1211$Packing.Density - mean(numeric_df1_P1211$Packing.Density)
+# numeric_df1_P1211$Packing.Density.c.2 = numeric_df1_P1211$Packing.Density.c^2
 # 
-# m.poly.P1211 = lm(Mean.Intensity ~ Vol.Unit.Ratio.c + Vol.Unit.Ratio.c.2, data = numeric_df1_P1211)
+# m.poly.P1211 = lm(Mean.Intensity ~ Packing.Density.c + Packing.Density.c.2, data = numeric_df1_P1211)
 # par(mfrow=c(2,2))
 # plot(m.poly.P1211)
 # par(mfrow=c(1,1))
@@ -1200,11 +1416,11 @@ perfectly colinear.
 # 
 # cat("Adjusted R-squared:", summary(m.poly.P1211)$adj.r.squared, "\n") #!?
 # 
-# ggplot(data = numeric_df1_P1211, aes(x = Vol.Unit.Ratio.c, y = Mean.Intensity)) +
+# ggplot(data = numeric_df1_P1211, aes(x = Packing.Density.c, y = Mean.Intensity)) +
 #   geom_point() +  # Add scatterplot points
 #   geom_smooth(method = "lm", formula = y ~ poly(x, 2), col = "red") +  # Add polynomial regression fit
-#   labs(x = "Centered Vol.Unit.Ratio", y = "Mean.Intensity",
-#        title = "Polynomial Regression Fit of Mean.Intensity vs. Centered Vol.Unit.Ratio")
+#   labs(x = "Centered Packing.Density", y = "Mean.Intensity",
+#        title = "Polynomial Regression Fit of Mean.Intensity vs. Centered Packing.Density")
 # 
 # fitted_values = fitted(m.poly.P1211)
 # residuals = resid(m.poly.P1211)
@@ -1236,10 +1452,10 @@ perfectly colinear.
 # 
 # # -------------------------------------------------------------------------
 # ########### Try again without outliers
-# numeric_df1_P1211_R$Vol.Unit.Ratio.c = numeric_df1_P1211_R$Vol.Unit.Ratio - mean(numeric_df1_P1211_R$Vol.Unit.Ratio)
-# numeric_df1_P1211_R$Vol.Unit.Ratio.c.2 = numeric_df1_P1211_R$Vol.Unit.Ratio.c^2
+# numeric_df1_P1211_R$Packing.Density.c = numeric_df1_P1211_R$Packing.Density - mean(numeric_df1_P1211_R$Packing.Density)
+# numeric_df1_P1211_R$Packing.Density.c.2 = numeric_df1_P1211_R$Packing.Density.c^2
 # 
-# m.poly.P1211 = lm(Mean.Intensity ~ Vol.Unit.Ratio.c + Vol.Unit.Ratio.c.2, data = numeric_df1_P1211_R)
+# m.poly.P1211 = lm(Mean.Intensity ~ Packing.Density.c + Packing.Density.c.2, data = numeric_df1_P1211_R)
 # par(mfrow=c(2,2))
 # plot(m.poly.P1211)
 # par(mfrow=c(1,1))
@@ -1248,11 +1464,11 @@ perfectly colinear.
 # 
 # cat("Adjusted R-squared:", summary(m.poly.P1211)$adj.r.squared, "\n") #!?
 # 
-# ggplot(data = numeric_df1_P1211_R, aes(x = Vol.Unit.Ratio.c, y = Mean.Intensity)) +
+# ggplot(data = numeric_df1_P1211_R, aes(x = Packing.Density.c, y = Mean.Intensity)) +
 #   geom_point() +  # Add scatterplot points
 #   geom_smooth(method = "lm", formula = y ~ poly(x, 2), col = "red") +  # Add polynomial regression fit
-#   labs(x = "Centered Vol.Unit.Ratio", y = "Mean.Intensity",
-#        title = "Polynomial Regression Fit of Mean.Intensity vs. Centered Vol.Unit.Ratio")
+#   labs(x = "Centered Packing.Density", y = "Mean.Intensity",
+#        title = "Polynomial Regression Fit of Mean.Intensity vs. Centered Packing.Density")
 # 
 # fitted_values = fitted(m.poly.P1211)
 # residuals = resid(m.poly.P1211)

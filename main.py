@@ -7,6 +7,7 @@ import statsmodels as sm
 import os, sys
 from Bio.PDB import PDBParser
 import seaborn as sns
+from collections import defaultdict
 
 from plot import plot as p
 from plot import dist as d
@@ -37,6 +38,7 @@ import weight as wt
 # PHIC (PHIcalc) = calculated phase angles associated with the FC column (used in calculating electron density maps)
  
 # FP and FC contain information about the observed and calculated structure factor amplitudes.
+
 def analyze_crystals(space_group):
     results_list = []
     intensity_dict = {}
@@ -123,23 +125,57 @@ def analyze_crystals(space_group):
     weights_df = wt.main(space_group)
     weights_df['PDB_ID'] = weights_df['PDB_ID'].str.replace('.pdb', '', regex=False)
 
-    final_df = calculateVolume(unit_cell_df['alpha'], unit_cell_df['beta'], unit_cell_df['gamma'],unit_cell_df['a'], unit_cell_df['b'], unit_cell_df['c'], weights_df, intensity_df)
+    final_df = calculateVolume(unit_cell_df['alpha'], unit_cell_df['beta'], unit_cell_df['gamma'],
+                               unit_cell_df['a'], unit_cell_df['b'], unit_cell_df['c'],
+                               weights_df, intensity_df)
 
-    #combine
-    final_df = pd.merge(final_df, weights_df, on='PDB_ID')
+    #combine        
+    reflection_df = reflection(space_group)
+    print("Columns in reflection_df:", reflection_df.columns)
 
+    # Merge the DataFrames
+    final_df = pd.merge(final_df, weights_df, on='PDB_ID', how='left')
+    final_df = pd.merge(final_df, reflection_df, on='PDB_ID', how='left')
+    print("Columns in final_df after merging:", final_df.columns)
+
+    # Check for missing columns
+    required_columns = ['PDB_ID', 'Spacegroup', 'Calculated Structure Weight (kDa)', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 
+                        'h', 'k', 'l', 'Common Max Reflection Intensity Value', 'UnitCellVolume', 'PackingDensity(Da/Ang^3)',
+                        'Mean Intensity', 'Max Intensity', 'Min Intensity', 'Max-Min Intensity Difference', 
+                        'Mean Phase', 'Max Phase', 'Min Phase', 'Max-Min Phase Difference']
+
+    missing_columns = [col for col in required_columns if col not in final_df.columns]
+    if missing_columns:
+        print("Missing columns:", missing_columns)
+    else:
+        final_df = final_df[required_columns]
+        
     # Finally reorder columns
-    final_df = final_df[['PDB_ID', 'Spacegroup', 'Calculated Structure Weight (kDa)', 'a', 'b', 'c', 'alpha', 'beta', 'gamma', 'UnitCellVolume', 'PackingDensity', 'Mean Intensity', 'Max Intensity', 'Min Intensity', 'Max-Min Intensity Difference', 'Mean Phase', 'Max Phase', 'Min Phase', 'Max-Min Phase Difference']]
+    final_df = final_df[['PDB_ID',
+                         'Spacegroup',
+                         'Calculated Structure Weight (kDa)',
+                         'a', 'b', 'c',
+                         'alpha', 'beta', 'gamma', 
+                         'h', 'k', 'l',
+                         'Common Max Reflection Intensity Value',
+                         'UnitCellVolume', 
+                         'PackingDensity(Da/Ang^3)',
+                         'Mean Intensity', 
+                         'Max Intensity', 
+                         'Min Intensity', 
+                         'Max-Min Intensity Difference',
+                         'Mean Phase', 
+                         'Max Phase', 
+                         'Min Phase', 
+                         'Max-Min Phase Difference']]
+    
     final_df, intensity, phase = [df.dropna() for df in [final_df, intensity, phase]]
     return final_df, intensity, phase
 
 def extract_unit_cell_attributes(space_group):
     unit_cell_attributes_list = []
     pdb_dir = f"/Users/adamkurth/Documents/vscode/CXFEL_Image_Analysis/CXFEL/unitcell_project/run_sfall/pdb/pdb_{space_group}"
-    
-    # structure_weights = wt.main(space_group)
-    # structure_weight_df = pd.DataFrame(structure_weights)
-    
+
     for pdb_file_name in os.listdir(pdb_dir):
         if pdb_file_name.endswith(".pdb"):
             pdb_name = os.path.splitext(pdb_file_name)[0]
@@ -179,11 +215,68 @@ def calculateVolume(alpha, beta, gamma, a, b, c, weights_df, df_in):
     structure_weight = weights_df['Calculated Structure Weight (kDa)']
     # Append the calculated values to the DataFrame
     df_in['UnitCellVolume'] = unitcell_vol
-    df_in['PackingDensity'] = structure_weight / unitcell_vol
+    structure_weight = (structure_weight*1000.0) # convert to Da
+    df_in['PackingDensity(Da/Ang^3)'] = structure_weight / unitcell_vol
     return df_in
 
-if __name__ == "__main__":
+def reflection(space_group, specific_index=None):
+    hkl_dir = f"/Users/adamkurth/Documents/vscode/CXFEL_Image_Analysis/CXFEL/unitcell_project/run_sfall/data/data_{space_group}"
+    indices_data = defaultdict(lambda: defaultdict(list))
+    file_names = [f for f in os.listdir(hkl_dir) if f.endswith('.hkl')]
 
+    if not file_names:
+        print("No .hkl files found in the directory.")
+        return pd.DataFrame()
+
+    for hkl_file_name in file_names:
+        hkl_path = os.path.join(hkl_dir, hkl_file_name)
+        try:
+            with open(hkl_path, "r", encoding="utf-8") as hkl_file:
+                for line in hkl_file:
+                    columns = line.split()
+                    if len(columns) >= 4 and columns[0].isdigit():
+                        h, k, l = int(columns[0]), int(columns[1]), int(columns[2])
+                        intensity = float(columns[3])
+                        indices_data[(h, k, l)][hkl_file_name].append(intensity)
+        except FileNotFoundError:
+            print(f"Error: {hkl_path} not found.")
+            continue
+
+    # Step 1: Find the maximum common intensity index
+    common_indices = {index: intensities for index, intensities in indices_data.items() if len(intensities) == len(file_names)}
+    max_intensity = -1
+    max_intensity_index = None
+
+    for index, files_intensities in common_indices.items():
+        for intensities in files_intensities.values():
+            local_max = max(intensities)
+            if local_max > max_intensity:
+                max_intensity = local_max
+                max_intensity_index = index
+
+    if max_intensity_index is None:
+        print("No common index with maximum intensity found across all files.")
+        return pd.DataFrame()
+
+    print(f"Maximum common intensity: {max_intensity}, HKL index: {max_intensity_index}")
+
+    if specific_index is None:
+        specific_index = max_intensity_index
+
+    # Step 2: Output intensities for the specific index
+    specific_index_intensities = [
+        {'PDB_ID': os.path.splitext(hkl_file_name)[0], 
+         'h': specific_index[0], 'k':specific_index[1], 'l':specific_index[2], 
+         'Common Max Reflection Intensity Value': intensity}
+        for hkl_file_name, intensities in indices_data[specific_index].items()
+        for intensity in intensities
+    ]
+    return pd.DataFrame(specific_index_intensities)
+
+if __name__ == "__main__":
+    reflection_df = reflection('P1211')
+    print(reflection_df)
+    
     """Get pdb ids for each spacegroup"""
     # from scrape_scripts dir import s
     # MONOCLINIC
@@ -212,23 +305,31 @@ if __name__ == "__main__":
     
     wd = os.getcwd()
     P1211_df, P1211_intensities, P1211_phases = analyze_crystals("P1211")
-    # print('P1211 Intensity DF: \n', P1211_intensities)
+    print('P1211 Intensity DF: \n', P1211_intensities)
     # print('P1211 Phase DF: \n', P1211_phases)
-    print('P1211 Main DF: \n', P1211_df)  
-    w.write(P1211_df, P1211_intensities, P1211_phases, 'P1211', wd)
+    # print('P1211 Main DF: \n', P1211_df)  
+    # w.write(P1211_df, P1211_intensities, P1211_phases, 'P1211', wd)
+    # w.write(P1211_df, P1211_intensities, P1211_phases, 'P1211', new_wd)
+    # w.write_new_approach_df(P1211_df, 'P1211', wd)
+    
     P121_df, P121_intensities, P121_phases = analyze_crystals("P121")
     # print('P121 Intensity DF: \n', P121_intensities)
     # print('P121 Phase DF: \n', P121_phases)
     print('P121 Main DF: \n', P121_df)  
-    w.write(P121_df, P121_intensities, P121_phases, 'P121', wd)
+    # w.write(P121_df, P121_intensities, P121_phases, 'P121', wd)
+    # w.write_new_approach_df(P121_df, 'P121', wd)
+
     C121_df, C121_intensities, C121_phases  = analyze_crystals("C121")
     # print('C121 Intensity DF: \n', C121_intensities)
     # print('C121 Phase DF: \n', C121_phases)
     print('C121 Main DF: \n', C121_df)  
-    w.write(C121_df, C121_intensities, C121_phases, 'C121', wd)
+    # w.write(C121_df, C121_intensities, C121_phases, 'C121', wd)
+    # w.write_new_approach_df(C121_df, 'C121', wd)
 
     all_df1 = pd.concat([P1211_df, P121_df, C121_df])
     print('All DF: \n', all_df1)
+
+    # print(all_df1[''])
 
     # for df in [P1211_intensities, P121_intensities, C121_intensities]:
     #     print(df.describe())
@@ -239,7 +340,7 @@ if __name__ == "__main__":
     # d.cor_matrix(C121_df)
 
     """TO DO 11/15/23"""
-    # 1 .  mean intensity vs packing density
+    # 1. mean intensity vs packing density
     # 2. a specific hkl reflection intensity vs packing density 
     # if these no regression then add water in the molecular weight and recaculate the packing density
     # look again mean instensity or specific reflection
